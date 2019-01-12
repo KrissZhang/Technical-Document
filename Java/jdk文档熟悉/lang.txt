@@ -1,0 +1,285 @@
+1.CharSequence接口：
+
+常用方法：
+charAt(int index)
+length()
+subSequence(int start, int end)  --返回此序列的子序列
+
+2.Class<T>类：
+
+Class类表示正在运行的类和接口，没有公共构造方法，由Java虚拟机及类加载器自动构造。
+
+常用方法：
+forName(String className)  --返回字符串指定的类或接口对象
+getAnnotations()  --返回元素上所有的注解
+getClassLoader()  --返回该类的类加载器
+getConstructors()  --返回该类的构造方法
+getDeclaredFields()  --返回属性
+getDeclaredMethods()  --返回方法
+getFields()  --返回公开可访问的字段
+getMethods()  --返回公开可访问的方法
+getResource(String name)  --查找带有指定名称的资源
+getSimpleName()  --返回基础类的简称
+newInstance()  --创建此Class对象所表示的类的一个实例
+
+3.ClassLoader：
+
+是一个抽象类，负责加载类的对象。
+
+类加载器有三种：
+引导类加载器(加载Java的核心库，用原生代码生成)、
+扩展类加载器(加载Java的扩展库)、
+系统类加载器(根据类路径加载Java类，可以用getSystemClassLoader()来获取)。
+除了系统类加载器之外还可以通过继承ClassLoader的方式来自定义类加载器。
+
+常用方法：
+
+getResource(String name)  --查找具有指定名称的资源
+getResourceAsStream(String name)  --返回具有指定资源名称的输入流
+getSystemClassLoader()  --返回系统类加载器
+loadClass(String name)  --使用指定的二进制名称来加载类
+
+4.Cloneable：
+
+类实现了该接口，重写方法，允许对该类对象进行深拷贝。
+
+5.Comparable<T>接口：
+
+该接口强行对实现它的类进行整体排序。
+实现compareTo方法，通过Collections.sort（和Arrays.sort）进行自动排序。
+负数--小于，零--等于，正数--大于。
+
+如：
+
+package com.self.test4;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+public class Test {
+	public static void main(String[] args) {
+		List<C> list = new ArrayList<C>();
+		C c1 = new C(1001);
+		list.add(c1);
+		C c2 = new C(-2);
+		list.add(c2);
+		C c3 = new C(0);
+		list.add(c3);
+		C c4 = new C(-99);
+		list.add(c4);
+		C c5 = new C(8);
+		list.add(c5);
+		
+		Collections.sort(list);
+		for (C c : list) {
+			System.out.println(c.toString());
+		}
+
+	}
+		
+}
+
+class C implements Comparable<C>{
+
+	private Integer number;
+	
+	public C(Integer number) {
+		super();
+		this.number = number;
+	}
+	
+	@Override
+	public String toString() {
+		return "number的值是：" + this.number;
+	}
+	
+	@Override
+	public int compareTo(C o) {
+		if(this.number < o.number){
+			return -1;
+		}else if(this.number == o.number){
+			return 0;
+		}else{
+			return 1;
+		}
+	}
+}
+
+6.Iterable<T>接口：
+
+实现此接口的类，允许成为foreach语句的目标：
+
+7.Math类：
+
+abs -- 绝对值
+max --较大值
+min --较小值
+pow(double a, double b) -- a的b次幂
+random() --0到1的随机值
+
+8.Number：
+
+BigDecimal、BigInteger、Byte、Double、Float、Integer、Long 和 Short 类的超类。
+
+9.Runtime：
+
+Java程序运行环境，通过 getRuntime 方法获取当前运行时环境。
+
+10.SecurityManager：
+
+安全管理器，允许应用程序实现安全策略。通过抛出异常来阻止程序继续执行。
+权限分为以下类别：文件、套接字、网络、安全性、运行时、属性、AWT、反射和可序列化。
+通过这种方式来获取安全管理器：
+SecurityManager manager = System.getSecurityManager();
+
+11.String：
+
+常用方法：
+
+charAt(int index)
+concat(String str) --将指定字符串联到此字符串的结尾。
+contains(CharSequence s) --判断是否包含指定字符。
+endsWith(String suffix) --以指定后缀结束
+equalsIgnoreCase(String anotherString) --判断是否相等，忽略大小写
+format(String format, Object... args) --使用指定的格式化字符串和参数返回一个格式化字符串(format在需要的时候上网查即可)
+如：String str = String.format("Hi,%s,%s,今天气温%d度", "Kris","Mark",40);
+getBytes(String charsetName) --使用指定的字符集将此String解码为字节序列，并将结果存储到一个新的字节数组中。
+indexOf(int ch) --返回字符第一次出现的索引
+lastIndexOf(int ch) --返回最后一次出现的指定字符在此字符串中的索引
+length()
+matches(String regex) --此字符串是否匹配正则表达式
+replace(char oldChar, char newChar) --字符串替换
+split(String regex)
+startsWith(String prefix)
+substring(int beginIndex, int endIndex)  --取子串
+toLowerCase()/toUpperCase() 
+trim()
+valueOf(double d) --返回 double 参数的字符串表示形式
+
+12.StringBuilder/StringBuffer：线程不安全/安全
+
+常用方法：
+
+append(char c)
+capacity() --返回当前容量
+charAt(int index)
+delete(int start, int end) --移除指定字符
+indexOf(String str)
+insert(int offset, double d) --将double参数的字符串表示形式插入此序列中
+length()
+replace(int start, int end, String str)
+reverse() --反转
+substring(int start, int end)
+
+13.System：
+
+不能被实例化。
+
+err--标准错误输出流
+in--标准输入流
+out--标准输出流
+
+currentTimeMillis() --返回以毫秒为单位的当前时间
+gc() --通知垃圾回收器清理
+getenv(String name) --获得指定环境变量值
+getProperty(String key) --获得指定键指示的系统属性
+load(String filename) --从作为动态库的本地文件系统中以指定的文件名加载代码文件
+
+14.Thread：
+
+线程类，两种创建线程的方法：略。
+
+常用方法：
+
+currentThread() --返回当前正在执行的线程对象的引用。
+getId() --返回线程的标识符
+getName() --返回线程的名称
+getPriority() --返回线程的优先级
+getState() --返回线程的状态
+interrupt() --中断线程
+interrupted() --测试当前线程是否已经中断。
+isAlive() --测试线程是否活动。
+join() --等待线程终止。
+run() 
+setName(String name) --设置线程名字
+setPriority(int newPriority) --设置线程优先级
+sleep(long millis) --线程休眠
+start()
+stop()
+yield() --暂停线程
+
+15.enum：枚举
+
+enum Provience{
+	Beijing,SiChuan,ShangHai,ShenYang,ChongQing
+}
+
+16.Thread.State：
+
+线程状态，枚举类型。
+
+NEW --至今尚未启动的线程处于这种状态。
+RUNNABLE --正在 Java 虚拟机中执行的线程处于这种状态。
+BLOCKED --受阻塞并等待某个监视器锁的线程处于这种状态。
+WAITING --无限期地等待另一个线程来执行某一特定操作的线程处于这种状态。
+TIMED_WAITING --等待另一个线程来执行取决于指定等待时间的操作的线程处于这种状态。
+TERMINATED --已退出的线程处于这种状态。
+
+17.ThreadGroup：
+
+线程组，已过时，用其他替换。
+
+18.ThreadLocal<T>：
+
+创建线程局部变量。
+
+常用方法：
+
+get()
+initialValue() --返回初始值
+remove()
+set(T value)
+
+19.Throwable：
+
+所有错误或异常的超类，略。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

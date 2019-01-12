@@ -1,0 +1,177 @@
+字节流对文件的一种读取方式：如果有中文可能会出现乱码
+
+		DataInputStream is = new DataInputStream(new BufferedInputStream(new FileInputStream("E:\\123.txt")));
+		String total = "";
+		int charX;
+		while((charX = is.read())!=-1){
+			total += (char)charX;
+		}
+		System.out.println(total);
+		
+字符流对文件的一种读取方式：不会出现乱码，但是适用范围不如字节流的大
+
+		BufferedReader reader = new BufferedReader(new FileReader("E:\\123.txt"));
+		String result = "";
+		String temp = "";
+		while((temp = reader.readLine())!= null){
+			result += new String(temp.getBytes("UTF-8")) + "\n";
+		}
+		System.out.println(result);
+
+
+1.BufferedInputStream、BufferedOutputStream：
+
+字节缓冲输入、输出流，略。
+
+read()、write()、flush()。
+
+2.BufferedReader、BufferedWriter：
+
+字符缓冲输入、输出流，略。
+
+read()
+readLine()
+write()
+flush()
+newLine()
+
+3.ByteArrayInputStream、ByteArrayOutputStream：
+
+在创建实例时，程序内部创建一个byte型的数据缓冲区。利用实例向数据中写入或读取数据，缓冲区的大小会自动增长。
+
+常用方法：
+
+toByteArray() --创建一个新分配的字节数组
+
+如：
+
+		int temp = 0;
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		out.write(3);
+		out.write(2);
+		out.write(3);
+		byte[] buff  = out.toByteArray();
+		ByteArrayInputStream is = new ByteArrayInputStream(buff);
+		while((temp = is.read())!=-1){
+			System.out.println(temp);
+		}
+		
+4.CharArrayReader、CharArrayWriter：
+
+与ByteArrayInputStream、ByteArrayOutputStream类似，差别在于字节和字符之分。
+
+5.Closeable：接口，可以关闭的数据源或目标，略。
+
+6.DataInput、DataOutput：DataInputStream、DataOutputStream的接口，略。
+
+7.DataInputStream、DataOutputStream：
+
+数据输入流允许应用程序以与机器无关方式从基础输入流中读取基本Java数据类型。
+数据输出流允许应用程序以适当方式将基本Java数据类型写入输出流中。
+
+8.File类：
+
+文件和目录的抽象形式。File类的实例是不可变的，一旦创建，File对象表示的抽象路径名将不会再改变。
+默认情况下，Java.io包中的类总是根据当前用户目录来分析相对路径名，该目录由user.dir指定，通常是Java虚拟机的调用目录。
+
+(1)File.separator 获取到的路径分隔符是平台相关的。可以使用System.getProperty("file.separator")来替换。
+
+(2)常用方法：
+
+canRead()
+canWrite()
+createNewFile()  --当指定的路径不存在文件时创建一个新的空文件。
+createTempFile(String prefix, String suffix, File directory)  --在指定的目录创建一个新的空文件，以指定的前缀和后缀生成文件名称。用于创建临时文件，会自动在名称上加随机数字。
+delete()
+exists()  --测试指定路径的文件或名称是否存在。
+getAbsoluteFile() --返回绝对路径。
+getCanonicalPath() --返回抽象路径名的规范路径名字符串。
+getName()  --返回文件名称。
+getParent()  --返回父路径名称。
+getPath()  --将此抽象路径名转换为一个路径名字符串。
+isAbsolute()  --测试此抽象路径名是否为绝对路径名。
+isDirectory()
+isFile() 
+isHidden()
+lastModified() --返回文件最后一次被修改的时间，这里返回的是时间戳，可以用SimpleDateFormat来处理时间。
+length() --文件长度。
+list() --返回由此抽象路径名所表示的目录中的文件和目录的名称所组成字符串数组。
+list(FilenameFilter filter) --比上面一个多了过滤条件。
+listFiles() --与list()的差别在于返回的是一个文件对象。
+mkdir() --创建此抽象路径名指定的目录。
+mkdirs() --创建此抽象路径名指定的目录，包括创建必需但不存在的父目录。
+renameTo(File dest) --重命名文件。
+setReadOnly() 
+
+9.FileInputStream、FileOutputStream：
+
+文件输入、输出字节流。
+
+常用方法：
+
+close() 
+finalize() --确定不在使用流的时候触发。
+getChannel()  --NIO相关。
+read(byte[] b) --按字节数组读取。
+write(byte[] b)  --写。
+
+10.FilePermission:
+
+表示对文件或者目录的访问。
+
+11.FileReader、FileWriter：
+
+读写已过滤字符流的抽象类。
+
+12.InputStream、OutputStream：
+
+所有字节输入、输出流的超类。
+
+13.InputStreamReader、OutputStreamWriter：
+
+字节流通向字符流的桥梁。
+字符流通向字节流的桥梁。
+
+14.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1367 @@
+1.PL/SQL注意：
+
+(1)不要写太多散列的SQL，应该尽可能地将SQL语句封装到过程或者函数中去。
+(2)使用一个独立包来处理错误。
+
+2.在PL/SQL程序块的末尾添加一个独占一行的"/"是为了可以让程序在SQL*Plus中可以执行。
+
+3.创建存储过程：
+
+(1)如：
+
+CREATE FUNCTION fun1 (str IN VARCHAR2)
+
+AS
+	--定义部分--
+BEGIN
+	--程序主体执行部分--
+END;
+/
+
+(2)存储过程授权：
+
+将存储过程授权给一个角色：
+
+GRANT EXECUTE ON fun1 TO ROLE;
+
+收回权限使用：REVOKE命令。
+
+(3)删除存储过程：
+
+删除单个存储过程：DROP FUNCTION fun1;
+
+删除包头和包体：DROP PACKAGE package;
+
+仅删除包体：DROP PACKAGE BODY package;
+
+4.PL/SQL程序块：
+
+PL/SQL块可以分为匿名块和命名块，一个PL/SQL程序块包括块头、声明单元、执行单元、异常处理单元四部分组成，其中只有执行单元是必须的。
+
+块头：命名块包含这一部分，确定程序的调用方式。
+声明单元：定义变量、游标以及被引用的子块。
+执行单元：PL/SQL块要执行的SQL语句。
+异常处理单元：抛出异常时的处理单元。
+
+(1)匿名块：
+
+【DECLARE】
+	--定义--
+BEGIN
+	--SQL语句--
+【EXCEPTION】
+	--异常处理语句--
+END;
+
+(2)命名块：主要写命名块。
+
+注：在存储过程和函数中可以混用AS和IS，视图中只能用AS，游标中只能用IS。
+
+如：
+
+PROCEDURE 【OR REPLACE】 name 【(parameter)【,parameter】】
+AS
+......
+
+FUNCTION 【OR REPLACE】 name 【(parameter)【,parameter】】
+AS
+......
+	RETURN return_datatype;
+......
+
+(3)嵌套块：
+
+块的嵌套，嵌套块也可以叫做闭包块。
+
+(4)块的作用范围：
+
+变量、异常、模块等都属于块的声明范围，内部块可以使用外部块的资源，反之，不能使用。
+
+(5)PL/SQL注释方式：
+
+/**/
+
+(6)规范化PL/SQL的书写：
+
+对每一个变量或者列的引用都通过表的别名、包名、过程名或者嵌套块的标签名规范化。
+
+如：
+
+PACKAGE BODY scope_demo
+IS
+	PROCEDURE set_global(number_in IN NUMBER)
+	IS
+		l_salary NUMBER := 10000;
+		l_count PLS_INTEGER;
+	BEGIN
+		<<local_block>>
+		DECLARE
+			l_inner PLS_INTEGER;
+		BEGIN
+			SELECT COUNT(*) INTO set_global.l_count FROM EMPLOYEES E WHERE E.DEPARTMENT_ID = local_block.l_inner AND E.SALARY > set_global.l_salary;
+		END local_block;
+		
+		scope_demo.g_global:=set_global.number_in;
+	END set_global;
+	
+END scope_demo;
+
+(7)嵌套程序：略。
+
+(8)PL/SQL大小写不敏感。
+
+5.字符集：
+
+分号;       	代表一个声明或语句的结束。
+百分号%     	属性指示符（游标属性，%ISOPEN、%ROWTYPE）或者LIKE条件通配符。
+单下划线_   	LIKE条件单个字符通配符。
+@           	远程位置指示符。
+冒号:			宿主变量标识符。
+双星号**    	幂运算符。
+<>、!=、^=、~=  表示不相等。
+双竖线||		表示连接操作符。
+<<和>>          标签分隔符。
+<=和>=			小于等于、大于等于。
+:=				赋值操作符。
+=>				位置表示法使用的关联操作符。
+双句号..		范围操作符。
+-- 和 /**/		单、多行注释。
+
+注：
+
+(1)标识符必须从字母开始，不能有空白字符。
+
+(2)标识符定义排除：保留字、STANDARD包。
+
+(3)直接量：
+
+数字：415、23.5、3.14f、7D、NULL
+字符串：'This is a String'、NULL
+时间间隔：INTERVAL '-18' MONTH、NULL
+布尔值：TRUE、FALSE、NULL
+
+注：字符串转时间戳。
+
+如：SELECT TO_TIMESTAMP_TZ('2017-12-12 23：50：59','yyyy-MM-dd HH24:mi:ss') FROM DUAL
+
+(4)NULL的处理：
+
+''和NULL比较为TRUE，'    '和NULL比较为FALSE。
+
+(5)在字符串中嵌入单引号：
+
+除了'''这种方式还可以使用下面这种更简单的方式：
+
+q'(--内容--)'
+
+如：q'(He's name is Lily.)'
+
+(6)数字直接量：
+
+整数和浮点数都可以被看做NUMBER类型。
+
+已经由数据库定义的常量：
+
+32位浮点数：
+
+BINARY_FLOAT_NAN:非数字，被0除可能得到结果。
+BINARY_FLOAT_INFINITY：正无穷。
+BINARY_FLOAT_MAX_NORMAL：能够表示的最大绝对数。
+BINARY_FLOAT_MIN_NORMAL：最小的常数，向下溢出。
+BINARY_FLOAT_MAX_SUBNORMAL：比向下溢出要小一些的最大正数。
+BINARY_FLOAT_MIN_SUBNORMAL：能够表示的最小绝对数。
+
+64位浮点数：
+
+BINARY_DOUBLE_NAN:非数字，被0除可能得到结果。
+BINARY_DOUBLE_INFINITY:正无穷。
+BINARY_DOUBLE_MAX_NORMAL:能够表示的最大绝对数。
+BINARY_DOUBLE_MIX_NORMAL:最小的常数，向下溢出。
+BINARY_DOUBLE_MAX_SUBNORMAL:比向下溢出要小一些的最大正数。
+BINARY_DOUBLE_MIX_SUBNORMAL:能够表示的最小绝对数。
+
+(7)布尔直接量：
+
+使用布尔直接量时，不用检查，直接让变量"说"就可以了。
+
+如：
+
+IF FLAG
+	--XXXX--
+END IF;     
+
+(8)分号：略。
+
+(9)PRAGMA关键字：？？？？
+
+(10)标签：
+
+PL/SQL标签是一种我们程序中特定部分命名的方法。
+
+语法：<<标签名>>
+
+相当于重命名，对块、变量、语句、循环都可以使用。
+
+6.IF语句：
+
+(1)第一种，如：
+
+IF salary < 5000 AND salary > 1000
+THEN
+	--处理语句--
+END IF;
+
+注：分支判定的其中一个值为NULL时，则分支的结果为NULL，且分支结果为NULL时不执行分支语句。
+
+可以使用NAV(VAR,0)来处理空值。
+
+(2)第二种，如：
+
+IF salary > 1000 AND salary < 5000
+THEN
+	--条件语句--
+ELSE 
+	--条件语句--
+END IF;
+
+(3)第三种，如：
+
+IF salary BETWEEN 1000 AND 2000
+THEN
+	--分支语句--
+ELSIF salary BETWEEN 2000 AND 3000
+THEN
+	--分支语句--
+ELSIF salary BETWEEN 3000 AND 4000
+THEN
+	--分支语句--
+ELSE
+	--分支语句--
+END IF;
+
+(4)IF语句的嵌套。
+
+(5)PL/SQL中IF语句是短路的。
+
+7.CASE语句：
+
+(1)第一种，如：
+
+CASE flag
+WHEN result1 THEN
+	statement1
+WHEN result2 THEN
+	statement2
+ELSE
+	statement_else
+END CASE;
+
+注：ELSE是可有可无的，但是如果既没有声明ELSE分支，又找不到匹配的分支时，就会抛异常。
+
+(2)第二种，搜索型CASE语句，即：不写FLAG值，默认为TRUE，其他和第一种一致。
+
+(3)嵌套CASE：CASE语句的嵌套。（可读性非常差）
+
+(4)CASE表达式：
+
+除了整个语句作为表达式返回值，结尾不是END CASE;而是END;之外和CASE语句一样。
+
+如：
+
+l_salary:=
+	CASE
+		WHEN salary > 1000 AND salary < 2000 THEN 1500
+		WHEN salary > 2000 AND salary < 3000 THEN 2500
+		WHEN salary > 3000 AND salary < 4000 THEN 3500
+		ELSE 0
+	END * 10;
+DBMS_OUTPUT.PUT_LINE(l_salary);
+
+8.GOTO语句：乱跳，别用。
+
+9.NULL语句：
+
+NULL;什么也不做。
+
+10.循环：
+
+(1)LOOP循环：适合不确定循环次数且至少执行一次的情况。
+
+LOOP
+	statement;
+END LOOP;
+
+使用EXIT或者EXIT WHEN语句来跳出循环，如：
+
+LOOP
+	IF salary > 5000
+	THEN
+		EXIT;
+	ELSE
+		salary:=salary+1000;
+	END IF;
+END LOOP;
+
+或者：
+
+LOOP
+	EXIT WHEN /*退出循环判断语句*/;
+	--不退出循环执行的操作--
+END LOOP;
+
+(2)WHILE循环：适用于不定次数的循环。
+
+WHILE 条件表达式
+LOOP
+	--执行语句--
+END LOOP;
+
+(3)FOR循环：适用于固定次数的循环。
+
+数值型FOR循环：循环变量必须从小写到大，如果希望从上边界执行到下边界则使用REVERSE关键字。
+
+FOR index IN [REVERSE] lowest..highest
+LOOP
+	--循环语句--
+END LOOP;
+
+游标FOR循环：和游标或者SELECT语句相关联的FOR循环。
+
+注：不要将SQL语句直接写在FOR循环的游标位置处，可读性不好。
+
+如：
+
+DECLARE
+  CURSOR l_cur
+  IS
+  SELECT * FROM BIM_QUALITY_PROBLEM WHERE ROWNUM <= 15 ORDER BY EAF_CREATETIME DESC;
+BEGIN
+  FOR cur IN l_cur
+  LOOP
+      DBMS_OUTPUT.put_line('EAF_ID是：' || cur.EAF_ID || ',EAF_NAME是：' ||cur.EAF_NAME);
+  END LOOP;
+END;
+
+注：获取循环中循环执行的次数，l_cur%ROWCOUNT。
+
+(4)循环标签：
+
+可以给循环设置一个标签，用于标准化操作循环变量和提高可读性。
+
+如：
+
+DECLARE
+  CURSOR l_cur
+  IS
+  SELECT * FROM BIM_QUALITY_PROBLEM WHERE ROWNUM <= 15 ORDER BY EAF_CREATETIME DESC;
+BEGIN
+  <<loop_cur>>
+  FOR cur IN l_cur
+  LOOP
+      DBMS_OUTPUT.put_line('EAF_ID是：' || loop_cur.cur.EAF_ID || ',EAF_NAME是：' || loop_cur.cur.EAF_NAME);
+  END LOOP loop_cur;
+END;
+
+(5)11g新特性无条件CONTINUE和有条件CONTINUE WHEN语句：
+
+可以避免大量的IF ELSE语句。
+
+如：
+
+BEGIN
+  FOR i IN 1..10
+  LOOP
+      CONTINUE WHEN MOD(i,2) = 0;
+      DBMS_OUTPUT.PUT_LINE(i);
+  END LOOP; 
+END;
+
+11.循环的注意点：
+
+(1)循环变量见名知意。
+(2)循环一个入口进，一个出口出。
+(3)在WHILE和FOR循环中不要使用EXIT和EXIT WHEN语句。
+(4)在循环中不要使用RETURN和GOTO语句。
+
+12.异常处理：
+
+Oracle异常包括两类：系统异常和程序员自定义异常。
+
+(1)定义有名字的异常
+
+DECLARE
+	excep_1 EXCEPTION;
+BEGIN
+
+EXCEPTION
+	WHEN excep_1
+	THEN
+		--异常处理语句--
+END;
+
+(2)异常处理的两种方式：自己处理和向上抛出异常。
+
+--抛出异常
+RAISE excep_1;
+
+(3)将异常名称和异常信息id关联：可以把异常的关联信息放到一个包中，需要处理到该异常时，直接通过包名来使用该异常。
+
+DECLARE
+	self_excep EXCEPTION;
+	PRAGMA EXCEPTION_INIT(self_excep,-1843);
+BEGIN
+
+EXCEPTION
+	RAISE self_excep;
+END;
+
+注：
+关联-1403(NO_DATA_FOUND)时，传给EXCEPTION_INIT的应该是100。
+不要使用0、100之外的正数。
+不要使用小于-1000000的负数。
+使用RAISE_APPLICATION_ERROR(ID,'自定义异常信息');来抛出自定义异常。
+
+(4)已经命名的系统异常：
+
+最重要、常用的异常放在STANDAR包下面，这个包是缺省包，所以在使用这个包下面的异常时可以不加包名。（其他包中的异常要加包名）
+
+可以使用SQLCODE来返回异常的id，如：
+
+BEGIN
+  RAISE NO_DATA_FOUND;
+EXCEPTION
+  WHEN NO_DATA_FOUND
+  THEN
+  DBMS_OUTPUT.PUT_LINE(SQLCODE);
+END;
+
+使用SQLERRM来返回某个错误代码对应的错误信息，如：
+
+BEGIN
+  DBMS_OUTPUT.put_line(SQLERRM(100));
+END;
+
+使用DBMS_UTILITY.FORMAT_ERROR_STACK取最后一次栈里的异常信息，可以返回行号。
+
+使用WHEN OTHERS可以覆盖其他异常。
+
+(5)异常的作用范围：
+
+系统定义的异常可以在任何地方使用，程序自定义的异常只能在定义的块中使用。
+
+(6)抛出异常：
+
+RAISE的三种用法：
+
+RAISE excep_1;
+RAISE package1.excep_1;
+RAISE;--只能用于异常处理单元的WHEN语句中。
+
+RAISE_APPLICATION_ERROR抛出自定义异常：
+
+RAISE_APPLICATION_ERROR(ID,'自定义异常信息');
+
+输入、输出参数的修改会被撤销，但是全局的数据库对象的操作，如CRUD的修改不会被撤销，需要手动ROLLBACK;
+
+(7)处理异常：处理异常时不可以使用AND连接词，但可以使用OR。
+
+DECLARE
+
+BEGIN
+
+EXCEPTION
+
+WHEN excep_1 【OR excep_2】
+THEN
+	--异常处理语句--
+WHEN OTHERS
+THEN
+	--异常处理语句--
+END;
+
+(8)
+
+PL/SQL的向上抛异常的处理方式和Java一致，一致到最外层（JVM）都没有处理的异常是未处理异常。
+
+如果没有添加EXCEPTION单元，却抛了一个异常，那么有可能会丢失异常信息。
+
+如果内层的嵌套代码块抛了异常，外层的后续代码还是会被执行。
+
+关联异常时不要使用-20999和-20000之间的1000个错误代码，这些已经被系统预留了。
+
+
+13.数据的使用：
+
+PL/SQL是一种静态类型的编程语言。（编译时进行类型的检查）
+
+命名：
+
+最长30个字符，以字母开头，包含字母、数字、$、#、_。不区分大小写。
+
+避免在PL/SQL中使用双引号。
+
+
+数据类型：
+
+	(1)字符：
+
+	CHAR：单字节字符，如：CHAR(8)，只能存8个字母。
+	NCHAR：双字节字符，如：NCHAR(8)，能存8个汉字。
+	VARCHAR2：
+	NVARCHAR2：
+
+	(2)数字：
+
+	NUMBER：因为十进制的特性，唯一一种可以对应数据库数据的数值类型。
+
+	(3)日期、时间、时间间隔：
+
+	DATE：
+	INTERVAL：
+	TIMESTAMP：
+
+	(4)布尔型：
+
+	TRUE：
+	FALSE：
+	NULL：
+
+	(5)二进制数据类型：
+
+	RAW：变长数据类型，不会转换字符集。
+	BLOB：
+	BFILE：保存在数据库之外的操作系统文件中的非结构化二进制数据。
+
+	(6)ROWID和UROWID：
+
+	ROWID：代表某一行记录唯一的物理地址。
+	UROWID：代表索引组织表中一条记录的逻辑地址。
+
+	(7)REF CURSOR：游标变量。
+
+	强REF CURSOR：
+	弱REF CURSOR：是动态类型结构。
+
+	(8)Internet类型：
+
+	(9)Any类型：
+
+	(10)自定义类型。
+
+
+数据的声明：在过程块的声明部分声明变量、常量、类型、异常。
+
+	(1)变量声明的基本语法：name dataType [NOT NULL] [:=[默认值]或者DEFAULT SYSDATE];
+	
+	(2)常量声明的基本语法：name CONSTANT dataType [NOT NULL] :=[默认值]或者DEFAULT SYSDATE;     --必须要给它赋一个唯一不变的值
+	
+	(3)声明了NOT NULL之后的值，如果为NULL那么就会报VALUE_ERROR错误。
+	
+	(4)锚定声明：按照已经定义好的数据类型来设置变量的数据类型。锚定的对象可能是：变量、预定义TYPE/SUBTYPE、数据库表或其中一列。锚定的类型会传递约束。
+		标量锚定：%TYPE属性，针对变量或表中的某一列。语法：变量名 已定义类型%TYPE [可选默认值]
+		记录锚定：%ROWTYPE属性，表或游标。语法：变量名 表名或游标名%ROWTYPE [可选默认值]
+		
+	(5)定义子类型：
+		有约束的子类型，如：SUBTYPE POSITIVE IS BINARY_INTEGER RANGE 1..2147; 
+		
+		没有约束的子类型：相当于起别名，如：SUBTYPE FLOAT IS NUMBER;
+		
+		
+数据类型的转换：
+
+	(1)隐式类型转换：类似Java，应该尽量避免。
+	(2)显式类型转换：通过CAST等内置函数转换。
+		如：
+			DECLARE
+			  l_var VARCHAR2(20);
+			  l_num NUMBER;
+			BEGIN
+			  l_var:= '333';
+			  l_num:=CAST(l_var AS NUMBER);
+			  DBMS_OUTPUT.PUT_LINE(l_num);
+			EXCEPTION
+			  WHEN OTHERS
+			  THEN
+				   DBMS_OUTPUT.PUT_LINE(SQLERRM);
+			END;
+			
+
+			
+字符串：
+		
+	
+					固定长度      可变长度
+	数据库字符集      CHAR          VARCHAR2
+	国家字符集        NCHAR         NVARCHAR2
+	
+	
+尽量使用可变长度。声明时指定字符串的最大长度，可以从1~32767个字节。声明如：l_var VARCHAR2(32767);
+还可以通过字符来指定最大长度：l_var VARCHAR2(30 CHAR);
+
+注：PL/SQL中字符串的长度要比oracle中的字符串要长很多，所以为了兼容，尽量只设定4000(oracle8i后版本)以内的最大长度。如果超过这个范围考虑保存到CLOB中去。
+
+CHAR在PL/SQL中有1~32767个字节，在oracle中最长为2000(oracle8i后版本)个字节。
+
+PL/SQL还支持一些字符串的子类型，很少使用，略。
+
+
+	字符串处理：
+
+处理字符串中包含单引号的情况：q'! 字符'串 !'或q'{ 字符'串 }'。
+
+CHR函数插入换行符，NVL2(p1,p2,p3);如果p1为NULL返回p3否则返回p2。
+
+	字符串连接：||或CONCAT。两个字符串连接时用CONCAT，多个字符串连接时用||。
+	
+CONCAT(str1,str2)：将str2追加到str1后面然后返回结果，如果其中一个为NULL，返回另一个字符串，如果两个都为NULL则返回NULL，总是范围参数类型较大的数据类型。
+
+	字符串大小写处理：UPPER和LOWER函数。INITCAP首字母大写。
+	
+	字符串检索：INSTR(被检索字符串,检索字符串,[起始位置]);
+	
+	取子串：SUBSTR(源字符串,起始索引,结束索引);
+	
+	字符替换：REPLACE(源字符串,被替换字符,替换字符);
+	
+	补齐：LPAD和RPAD，在左右增加空格。
+
+	负的索引位置：从字符串右侧往左侧找。
+	
+	裁剪：
+	
+	LTRIM(a,',');去除左边的指定字符。RTRIM(a,',');去除右边的指定字符。
+	TRIM：去除两边的字符。TRIM(a)--去除空格。TRIM(',' FROM a);去除a中两边的指定字符。
+	
+	10g后支持正则表达式：
+	REGEXP_LIKE(source_string,pattern);   --判断是否符合正则模式。
+	REGEXP_INSTR(source_string,pattern);  --定位模式在源字符串中出现的位置。
+	REGEXP_SUBSTR(source_string,pattern);  --提取匹配正则模式的文本。
+	REGEXP_COUNT(source_string,pattern);   --正则模式匹配次数。
+	REGEXP_REPLACE(source_string,pattern,替换字符);  --替换正则文本。
+	
+	正则：贪婪模式、非贪婪模式。
+	
+	注：oracle中空字符会按照NULL处理。
+	
+	CHAR到VARCHAR2，不会去掉空白文本。VARCHAR2到CHAR，会自动补上空白内容占位，直到最大长度。
+	
+	字符函数：如果多个参数中都是定长的则返回结果类型为定长，如果有一个为变长，那么就返回变长类型。
+	
+字符串函数速查：CHR、CONCAT、CONVERT(转换字符集)、INITCAP、INSTR、LENGTH、LOWER、TRIM、正则相关、REPLACE、SUBSTR、TO_CHAR、TRANSLATE(替换子串)。
+
+
+
+数字：
+
+数值类型：
+
+NUMBER：十进制数，平台无关。
+PLS_INTEGER、BINARY_INTEGER、BINARY_FLOAT、BINARY_DOUBLE：与硬件原生相关。
+SIMPLE_INTEGER、SIMPLE_FLOAT、SIMPLE_DOUBLE：11g引入，不允许为NULL，溢出不抛异常，显著加快执行速度。
+
+NUMBER：可以声明整数、定点数、浮点数。
+
+a NUMBER; 得到一个浮点数。
+a NUMBER(精度,刻度); 精度的取值范围是1到38,刻度的范围是-84到127。如：a NUMBER(9,2)
+a NUMBER(9,0)和a NUMBER(9)等价，声明整数。
+
+PLS_INTEGER->SIMPLE_INTEGER，以限制某些条件为代价换取效率的大幅提升。取值范围：正负21亿。
+32位和64位浮点数和INTEGER类似。
+
+数值的子类型用得很少，略。
+
+TO_NUMBER()、TO_CHAR()实现字符串和数字的互转。
+
+格式化元素符V：
+
+例如：TO_CHAR(l_var,'999G9V99')  将l_var放大V后的位数*10倍，G为逗号分隔符，处于从左至右G到V之间的位数位置。
+
+TO_CHAR(1234.99,'99.99')   当被转数字的位数小于格式字符时会报错，反之四舍五入。数字转换成字符串时因为正负号的关系，开头会有空白字符，需要做拆分处理。
+
+CAST：提供数字和字符串之间的转换，但是不支持格式化。如：CAST('123.45' AS NUMBER);
+
+数字操作符：+ - * / = **(幂) < > <= >= <>(sql标准)或!=  IS NULL  BETWEEN(闭区间)  NOT  AND  OR
+
+数字函数：
+
+CEIL(天花板)、FLOOR(地板)、ROUND(四舍五入)、TRUNC(按照指定的小数截断，TRUNC(10.7891,3)->10.789)
+
+
+
+日期和时间戳：
+	
+时间类型：
+
+DATE：存储日期和时间，精确到秒，不带时区。
+TIMESTAMP：存日期和时间，不带时区，精度为十亿分之一秒。
+TIMESTAMP WITH TIME ZONE：存储日期、时间和时区，精度小数点后9位。
+TIMESTAMP WITH LOCAL TIME ZONE：存储的时间会在数据库和会话之间转换。
+
+
+声明：l_date TIMESTAMP:=SYSDATE;
+
+
+时间类型选择：TIMESTAMP可以代替DATE，TIMESTAMP WITH TIME ZONE需要保存入口时区时使用，TIMESTAMP WITH LOCAL TIME ZONE需要转换时区时使用。
+
+oracle9i之后可以分别获取会话（前三个）和数据库（后两个）的当前时间：优先使用SYSDATE。SYSTIMESTAMP.
+
+CURRENT_DATE(DATE)、CURRENT_TIMESTAMP(TIME WITH TIME ZONE)、LOCALTIMESTAMP(TIMESTAMP)、SYSDATE(DATE)、SYSTIMESTAMP(TIMESTAMP WITH TIME ZONE)
+		
+声明时间变量为TIMESTAMP然后通过SYSDATE获取时间，可以隐式从DATE转到TIMESTAMP类型。
+
+
+时间间隔：INTERVAL。计算时间差时最好用这种方法。
+
+INTERVAL YEAR TO MONTH：允许我们用年和月定义时间间隔。
+INTERVAL DAY TO SECOND：允许天、小时、分钟、秒定义时间间隔。
+
+	如：
+
+	--时间差处理
+	DECLARE
+	  INVAL_YEAR INTERVAL YEAR TO MONTH;--定义年月时间差
+	  INVAL_DAY INTERVAL DAY TO SECOND;--定义天到秒时间差
+	  DATE1 TIMESTAMP;
+	  DATE2 TIMESTAMP;
+	BEGIN
+	  DATE1:=TO_TIMESTAMP('2012-12-24 09:12:31','yyyy-MM-DD HH24:mi:ss');
+	  DATE2:=TO_TIMESTAMP('2018-01-13 06:42:17','yyyy-MM-DD HH24:mi:ss');
+	  INVAL_YEAR:=(DATE2-DATE1) YEAR TO MONTH;
+	  DBMS_OUTPUT.put_line('相差:' || EXTRACT(YEAR FROM INVAL_YEAR) ||'年'|| EXTRACT(MONTH FROM INVAL_YEAR) ||'月');
+	END;
+	
+PL/SQL中传入或传出时间间隔需要使用到unconstrainted关键字。
+TO_TIMESTAMP_TZ  --转换成带时区的。
+日期到字符串：TO_CHAR(日期,'');
+对于TIMESTAMP类型可以在SS之后使用FF来指明毫秒级精度。
+使用时间格式字符串匹配时间时类型格式类型会被放宽，使用FX来严格控制格式。如：TO_DATE('2010-12-12','yyyy-MM-fxdd');   --FM填充模式。
+
+
+使用时区比较复杂，使用到的时候百度。
+
+CAST可以处理字符串和各种时间类型之间的转换，EXTRACT可用于从时间或时间间隔中提取日期部分值。如：YEAR、DAY。
+
+时间计算：
+
+DECLARE
+  s_time TIMESTAMP;
+  e_time TIMESTAMP; 
+BEGIN
+  s_time:=systimestamp;
+  e_time:=s_time + INTERVAL '1500 4:30:2.3' DAY TO SECOND;
+  DBMS_OUTPUT.put_line(TO_CHAR(e_time,'yyyy-mm-dd hh24:mi:ss.FF'));
+END;
+
+涉及到月份的应该使用ADD_MONTHS来计算时间，不然会因为大小月的问题出错。
+
+DATE类型时间计算：
+
+SYSDATE + 1; --加一天
+SYSDATE + (4/24)  --加4个小时
+
+1小时：1/24
+1分钟：1/24/60
+1秒钟：1/24/60/60
+
+时间间隔作为参数使用时，将类型声明为：YMINTERVAL_UNCONSTRAINED(年、月)或DSINTERVAL_UNCONSTRAINED(天、秒)类型。否则会损失精度。
+
+
+记录类型：
+
+记录：复合数据结构，类似与表的一行。
+
+声明记录：
+
+(1)基于表的记录：
+
+DECLARE
+	one_book books%ROWTYPE;
+BEGIN
+
+END;
+
+(2)基于游标的记录：
+
+DECLARE
+	CURSOR cur
+	IS
+	SELECT * FROM EMP;
+	one_book cur%ROWTYPE;
+BEGIN
+
+END;
+
+(3)自定义记录：
+
+DECLARE
+  --声明记录类型
+  TYPE rd_wk IS RECORD(
+       EID BIM_WEEKLYMEETING.EAF_ID%TYPE,
+       cr_time BIM_WEEKLYMEETING.EAF_CREATETIME%TYPE
+  );
+  --声明记录变量
+  one_wk rd_wk;
+BEGIN
+  SELECT EAF_ID,EAF_CREATETIME INTO one_wk FROM BIM_WEEKLYMEETING WHERE ROWNUM < 2;
+  DBMS_OUTPUT.put_line('EAF_ID是：' || one_wk.EID);
+  DBMS_OUTPUT.put_line('创建时间是：' || one_wk.cr_time);
+END;
+
+自定义的记录属性可以是硬编码的类型、锚定类型、集合类型或是游标类型。
+
+记录可以作为参数传给方法或过程，当同时需要使用到多表的字段时可以使用自定义记录。
+
+保存数据的时候用这个很好。
+
+记录的使用：
+
+出入参数、赋值、返回值。
+
+记录的判空、比较、赋值必须精确到每个字段来处理，不能将记录作为一个整体进行处理。
+
+嵌套记录：
+
+DECLARE
+	TYPE phone_num IS RECODE(
+		aera_num varchar2(4000)
+	);
+	TYPE concat_phone IS RECODE(
+		home_phone# phone_num
+	);
+	one_type concat_phone;
+BEGIN
+	one_type.home_phone#.aera_num:='123';
+END;
+
+
+触发器伪记录：OLD(事务前记录)和NEW(事务后记录)。
+
+
+集合：
+
+
+优势：数据结构清晰，改善性能(缓存)。
+
+共有三种集合类型：关联数组、嵌套表、VARRAY。
+
+集合中的一个元素叫做一"行"，对应的索引就叫做"行号"。集合的核心是由一个同质元素组成的一维列表。
+
+目前还不支持多维集合，但是可以使用嵌套的方式。根据允许的行数是否有上、下限分为无界和有界集合。如果一个集合从第一行到最后一行都被定义且赋值就是紧凑的，反之就是稀疏的。
+所有集合都可以通过行号引用记录，可以使用整数和字符串进行索引。
+内部表：嵌套列。存储表：物理表。
+
+关联数组：
+
+PL/SQL中使用，一维、无界、稀疏、元素同质。
+
+使用如：
+
+--关联数组使用
+DECLARE
+  TYPE list IS TABLE OF BIM_WEEKLYMEETING.EAF_NAME%TYPE INDEX BY PLS_INTEGER;
+  one_obj list;
+  l_cur PLS_INTEGER;
+BEGIN
+  one_obj(0):='Lily';
+  one_obj(99):='Lucy';
+  one_obj(-199):='Mike';
+  l_cur:=one_obj.FIRST;
+  WHILE (l_cur IS NOT NULL)
+  LOOP
+     DBMS_OUTPUT.put_line(one_obj(l_cur));
+     l_cur:=one_obj.NEXT(l_cur);
+  END LOOP;
+END;
+
+嵌套表：
+
+PL/SQL和数据库中使用，一维、无界、元素同质。多重集合，元素无固定顺序。
+
+使用如：
+
+--嵌套表的使用
+CREATE TYPE list IS TABLE OF VARCHAR2(100);--定义嵌套表类型
+
+DECLARE
+   --使用构造函数初始化嵌套表
+   family list:=list();--初始化时可以直接加参数
+   parent1 list:=list();
+   children1 list:=list();
+BEGIN
+   family.EXTEND(3);
+   family(1):='lily1';
+   family(2):='lily2';
+   family(3):='lily3';
+   
+   children1.EXTEND;
+   children1(1):='lily2';
+   children1.EXTEND;
+   children1(2):='lily3';
+   
+   parent1:=family MULTISET EXCEPT children1;--排除children1中的元素
+   
+   --这里是紧凑的，所以可以用FOR循环
+   FOR l_cur IN parent1.FIRST..parent1.LAST
+   LOOP
+       DBMS_OUTPUT.put_line(parent1(l_cur));
+   END LOOP;
+END;
+
+VARRAY：可变长度的数组。
+
+PL/SQL和数据库中使用，一维、同质。有界、非稀疏。必须指定VARRAY的最大元素个数，元素也是有序的。
+
+使用如：
+
+--VARRAY的使用
+CREATE TYPE f_name IS VARRAY(2) OF VARCHAR2(100);--为VARRAY设置最大长度
+CREATE TYPE c_name IS VARRAY(1) OF VARCHAR2(100);
+
+--建表存集合
+CREATE TABLE family(
+    sur_name VARCHAR2(100),
+    p_name f_name,--表类型为集合类型
+    ch_name c_name
+);
+
+--
+DECLARE
+  p f_name:=f_name();
+  c c_name:=c_name();
+BEGIN
+  p.EXTEND(2);
+  p(1):='p1';
+  p(2):='p2';
+  c.EXTEND;
+  c(1):='c1';
+  
+  --插入集合
+  INSERT INTO family () VALUES ('p1p2',p,c);
+END;
+
+集合的使用：
+
+记录成员、输入和输出参数、返回值、列的集合。
+
+ORACLE包中没有预定义的集合类型，需要使用到的时候可以通过CREATE TYPE来定义。
+
+集合的选择：
+
+稀疏集合用关联数组，大数据量用嵌套表，有序、限制长度用VARRAY。
+
+集合方法：
+
+COUNT(返回元素数量)、DELETE(删除元素)、EXISTS(是否包含指定行)、EXTEND(扩展，分配单元)、FIRST(第一行)、LAST(最后一行)、LIMIT(确定VARRAY中可以扩展的最大长度)、PRIOR(前一行)、NEXT(后一行)、TRIM(从嵌套表或VARRAY中删除n个元素)。
+
+删除定义的嵌套表或VARRAY类型可以用DROP TYPE 类型。
+
+存记录的关联数组实践：
+DECLARE
+  --定义记录
+  TYPE rd_wk IS RECORD(
+       EID BIM_WEEKLYMEETING.EAF_ID%TYPE,
+       ENAME BIM_WEEKLYMEETING.EAF_NAME%TYPE
+  );
+  --定义记录变量
+  one_recode rd_wk;
+  --定义关联数组
+  TYPE list IS TABLE OF rd_wk INDEX BY PLS_INTEGER;
+  --集合对象
+  one_obj list;
+  --关联数组索引
+  l_cur PLS_INTEGER;
+BEGIN
+  --赋值
+  one_recode.EID:='1';
+  one_recode.ENAME:='1X';
+  one_obj(-100):=one_recode;
+  
+  one_recode.EID:='2';
+  one_recode.ENAME:='2Y';
+  one_obj(100):=one_recode;
+  
+  --初始化索引
+  l_cur:=one_obj.FIRST;
+  WHILE (l_cur IS NOT NULL)
+  LOOP
+      DBMS_OUTPUT.put_line(one_obj(l_cur).EID);
+      DBMS_OUTPUT.put_line(one_obj(l_cur).ENAME);
+      l_cur:=one_obj.NEXT(l_cur); 
+  END LOOP;
+END;
+
+其他数据类型：
+
+BOOLEAN：ORACLE本身并不支持。取TRUE、FALSE、NULL值。
+RAW：处理比较少的二进制数据。
+UROWID和ROWID：表示数据库的ROWID。UROWID是通用的。通过SELECT语句获取UROWID。
+
+LOB：大数据量类型。8至128TB。
+	BFILE(外部，不参与事务，不能进行提交或回滚)：一般只能读取，不允许写入，两个不同行可以指向同一个文件。
+	BLOB：二进制
+	CLOB：字符
+	NCLOB：
+
+LOB定位符：相当于指向真实大量数据的指针。
+空的LOB和NULL LOB：前者相当于没有指向任何资源，后者相当于连定位符都没有。
+对于LOB类型的数据判空不仅要检查是否有定位符还要检查长度：
+
+IF some_lob IS NULL THEN
+
+ELSIF DBMS_LOB.GETLENGTH(some_lob) = 0 THEN
+
+ELSE
+
+写入LOB数据：使用DBMS_LOB.WRITE()或DBMS_LOB.WRITEAPPEND()来写入。这里需要使用到COMMIT;和ROLLBACK;。具体比较复杂，使用到的时候百度。
+读取LOB：DBMS_LOB.READ();--复杂，参考百度。
+BFILE：保存的是目录和文件名的组合，实际使用参考百度。可以通过一定的方法加载到内部。
+11g引入SecureFiles技术，相对于BasicFiles，效率有了很大的提升，但是默认是BasicFiles。
+PL/SQL中CLOB和VARCHAR2可以隐式转换。
+
+临时LOB：略。
+
+LOB转换函数：略。
+
+预定义类型：
+
+XMLType：保存XML数据。
+URI：如HTML地址。
+Any：任何类型。动态类型，是不透明的，只能通过程序去操作Any类型。
+
+14.DML：
+
+
+事务：原子性(全部发生或不发生)、一致性(事务中的行为必须作为一个整体不违反约束)、隔离性(事务可以同时发生)、持久性(事务发生后保存状态)。
+
+
+4中DML语句：UPDATE、INSERT、DELETE、MERGE(更新插入，有指定列就更新，没有就插入数据)。
+
+INSERT语句：
+
+INSERT INTO TABLE [(属性列表)] VALUES (值列表);
+
+INSERT INTO TABLE [(属性列表)] SELECT ...;
+
+注：ORACLE 11g后可以直接通过  序列名.NEXTVAL来获取序列。
+
+UPDATE语句：
+
+UPDATE TABLE SET 属性1=值1 [,属性2=值2..] [WHERE 属性X=值X];
+
+DELETE语句：
+
+DELETE FROM TABLE [WHERE 属性X=值X];
+
+MERGE语句：
+
+MERGE INTO 目标表 A
+USING 源表 B
+ON(A.条件字段1=B.条件字段1 AND A.条件字段2=B.条件字段2..)  
+WHEN MATCHED THEN UPDATE SET A.更新字段=B.字段
+WHEN NOT MATCHED THEN INSERT INTO A(字段1,字段2..) VALUE (值1,值2);
+
+
+隐式游标：总是指向最后一次执行的SQL语句。
+
+SQL%FOUND：至少一行被INSERT、UPDATE、DELETE操作返回TRUE。
+SQL%NOTFOUND：没有任何修改返回TRUE。
+SQL%ROWCOUNT：返回被MDL语句修改的行数。
+SQL%ISOPEN：对于DML语句总是返回FALSE。
+
+从DML语句返回信息：
+
+如：UPDATE TABLE SET 属性1=值1,属性2=值2 WHERE 属性X=值X RETURNING 属性1,属性2 INTO 变量1,变量2;
+也可以使用BULK COLLECT把修改的值放入集合中去。
+
+抛异常时DML语句还是会执行，不会自动回滚。
+
+在INSERT和UPDATE中可以使用记录。
+
+INSERT INTO TABLE VALUES 记录;
+UPDATE TABLE SET ROW = 记录 WHERE 属性1 = 记录.属性1;
+
+
+事务管理：
+
+(1)COMMIT：提交。COMMIT会释放会话中使用的任何行锁和表锁。
+(2)ROLLBACK：回滚。ROLLBACK;或ROLLBACK TO SAVEPOINT;
+(3)SAVEPOINT：SAVEPOINT savepoint_name; --SAVEPOINT没有块作用域的概念。
+(4)SET TRANSACTION：设置事务，SET TRANSACTION READ ONLY(设置事务只读,事务后的语句看到的是事务发生前的数据)、SET TRANSACTION READ WRITE;(缺省设置)、设置隔离级别。
+(5)LOCK TABLE：用不同模式的锁锁住一张或多张表，LOCK TABLE TABLE_LIST IN 模式; 模式值百度之。
+
+自治事务：建立一个和事务环境隔离开来的事务，由其他事务独立调用。
+
+15.数据提取：
+
+隐式游标、显式游标、游标变量、游标表达式、动态SQL查询。
+
+游标：
+
+游标指向的不是具体的某个表而是虚拟的某张视图。
+
+静态SQL：被编译的SQL。
+动态SQL：在执行时才被制造出来并执行。
+结果集：会被缓存到SGA中提升性能。
+隐式游标：由数据库操作的游标。
+显式游标：明确把SELECT语句声明成一个游标。
+游标变量：指向游标的对象。
+游标属性：游标名%游标属性名
+
+SELECT  FOR UPDATE 【OF 表名.列名】：为查询出来的每一行数据加锁，保证不被其他人修改（修改这些记录前就加锁）。
+还可以为锁加限制，只有指定的列出现时才加锁。
+COMMIT会释放锁，提交某条数据后，就不能再FETCH了。
+
+BULK COLLECT：获取批量数据。
+
+查询操作的流程：解析、绑定、打开、执行、提取、关闭。
+
+游标属性：指向的是最后一次运行的DML语句。
+
+SQL%FOUND：
+SQL%NOTFOUND：
+SQL%ROWCOUNT：目前为止从游标中取出数据的条数。
+SQL%ISOPEN：判断游标是否打开。
+SQL%BULK_ROWCOUNT：FORALL语句修改的记录数量。
+SQL%BULK_EXCEPTIONS：FORALL语句修改出现的异常。
+
+隐式游标：
+
+隐式游标的特性：SELECT语句放在执行块而不是定义块、带有INTO、SELECT语句无需打开-提取-关闭由数据库帮助完成。
+
+SELECT INTO 与 SELECT BULK COLLECT INTO(允许在隐式查询中返回多条记录)。
+
+信息多于一行时应该使用显式游标。SELECT INTO没有数据时，返回NO_DATA_FOUND异常。超过一行返回TOO_MANY_ROWS异常。使用SELECT INTO 必须保证有且只有一行数据。带上异常处理语句也可以。
+
+隐式游标可以使用上述前四个游标属性。
+
+显式游标：SELECT语句写到定义块中，具有较强的控制粒度。游标操作的是打开游标时的状态，忽略游标中的DML语句状态更新。
+
+带参数的显示游标：(这里用的是游标FOR循环) 游标的参数只能是输入参数，不能是输出参数，参数可以带默认值。
+
+DECLARE
+  eid BIM_WEEKLYMEETING.EAF_ID%TYPE;
+  CURSOR cursor_wk (eid IN BIM_WEEKLYMEETING.EAF_ID%TYPE) RETURN BIM_WEEKLYMEETING%ROWTYPE
+  IS
+  SELECT * FROM BIM_WEEKLYMEETING WHERE EAF_ID = eid;
+BEGIN
+  eid:='C736A62D1F56576C5196B2DBE311629E';
+  FOR current_wk IN cursor_wk(eid)
+  LOOP
+      DBMS_OUTPUT.put_line(current_wk.eaf_name);
+  END LOOP;
+END;
+
+包级别的游标的生命周期是整个包存在的周期，避免这种游标一直打开的情况出现。
+
+游标一般的处理方式：因为定义在包中的游标必须要显式关闭游标，所以必须采用这种方式。另外，如果是将游标中的数据放入集合这种方式使用起来也会比较方便。
+
+DECLARE
+  eid BIM_WEEKLYMEETING.EAF_ID%TYPE;--游标参数变量
+  ename BIM_WEEKLYMEETING.EAF_NAME%TYPE;--游标参数变量
+  --显式游标定义
+  CURSOR cursor_wk (eid IN BIM_WEEKLYMEETING.EAF_ID%TYPE,ename IN BIM_WEEKLYMEETING.EAF_NAME%TYPE) 
+  IS
+  SELECT EAF_ID AS EID,EAF_NAME AS ENAME FROM BIM_WEEKLYMEETING WHERE EAF_ID = eid OR EAF_NAME = ename;
+  --定义记录
+  one_rd cursor_wk%ROWTYPE;
+  --定义集合数组
+  TYPE list IS TABLE OF cursor_wk%ROWTYPE INDEX BY PLS_INTEGER;
+  --定义集合变量
+  one_obj list;
+  --定义集合指针
+  l_cur PLS_INTEGER;
+BEGIN
+  eid:='C736A62D1F56576C5196B2DBE311629E';
+  ename:='上班时间禁止吃零食通告传达周例会';
+  --打开游标
+  OPEN cursor_wk(eid,ename);
+       --批量将游标中的数据放入集合
+       FETCH cursor_wk BULK COLLECT INTO one_obj;
+  CLOSE cursor_wk;
+  
+  --显示集合中的数据
+  l_cur:=one_obj.FIRST;
+  WHILE (l_cur IS NOT NULL)
+  LOOP
+      one_rd:=one_obj(l_cur);
+      DBMS_OUTPUT.put_line('EAF_ID是：'||one_rd.EID);
+      DBMS_OUTPUT.put_line('EAF_NAME是：'||one_rd.ENAME);
+      DBMS_OUTPUT.put_line('-----华丽的分割线-------');
+      l_cur:=one_obj.NEXT(l_cur); 
+  END LOOP;
+END;
+
+显示游标属性和隐式一致。
+
+WHERE CURRENT OF 语句：简便地修改或删除最后一次取出来的数据行(感觉没什么用)。
+
+
+游标变量和REF CURSOR：
+
+属于动态游标，提供了不同块之间游标传递和共享的可能。
+
+声明游标类型：
+
+TYPE cursor_var1 IS REF CURSOR [RETURN table%ROWTYPE]; --强类型(会对数据类型进行检查)
+TYPE cursor_var2 IS REF CURSOR; --弱类型(不会检查类型)
+
+声明游标变量：
+c2 cursor_var2;
+cursor_var2 SYS_REFCURSOR; --9i之后给的弱类型
+
+打开游标变量：(需要显式关闭)
+OPEN c2 FOR SELECT语句;
+
+从游标变量获取数据：
+
+FETCH c2 INTO 变量名;
+
+对于弱类型的游标变量，一定要捕获ROWTYPE_MISMATCH异常。
+
+游标变量行类型兼容：略。
+游标变量别名：一个游标变量赋值给另一个游标变量。
+
+作用范围：只要用OPEN FOR创建了游标对象后，还有代码可以使用这个游标变量，那么它的生命周期就还存在。
+
+游标变量作为参数的传递和普通变量一致，也可以使用IN、OUT、IN OUT三种模式。
+
+注意：游标变量不能定义在包中，不能为NULL，不能比较、不能在集合中使用。
+
+例：
+
+DECLARE
+   --声明一个弱类型的游标变量
+   cur_var SYS_REFCURSOR;
+   --变量
+   l_var VARCHAR2(4000);
+BEGIN
+   OPEN cur_var FOR SELECT EAF_NAME FROM BIM_WEEKLYMEETING WHERE ROWNUM < 2;
+        FETCH cur_var INTO l_var;
+   CLOSE cur_var;
+   DBMS_OUTPUT.put_line(l_var);
+END;
+
+
+游标表达式：强大但使用起来太过复杂，先不了解。
+
+16.动态SQL和动态PL/SQL：
+
+动态SQL是在运行时才构建执行的SQL语句。
+
+NDS：原生动态SQL，相对于DBMS_SQL是首选。
+
+EXECUTE IMMEDIATE语句：(:NUM -- 是参数的占位符,名字可以任意取且可以重复)、(USING的参数可以有IN | OUT | IN OUT三种模式，USING只能绑定SQL类型参数)、(USING绑定NULL值时需要绑定一个为NULL的变量而不要直接绑定NULL值)
+
+EXECUTE IMMEDIATE SQL [INTO 变量[,变量..]] [USING [IN|OUT|IN OUT] 参数 [,[IN|OUT|IN OUT] 参数..]]
+
+如：
+
+DECLARE
+  l_sql VARCHAR2(4000);
+  e_name VARCHAR2(4000);
+  l_id VARCHAR2(4000);
+  l_name VARCHAR2(4000);
+BEGIN
+  l_id:='0E529A4DFF732D66BA61E27414F0FDE7';
+  l_name:='上班时间禁止吃零食通告传达周例会';
+  l_sql:='SELECT EAF_NAME FROM BIM_WEEKLYMEETING WHERE EAF_ID = :EID AND EAF_NAME = :ENAME AND ROWNUM < 2';
+  EXECUTE IMMEDIATE l_sql INTO e_name
+  USING l_id,l_name;
+  DBMS_OUTPUT.put_line(e_name);
+END;
+
+还可以使用OPEN FOR 和 游标变量结合拼SQL串的方式来写，
+
+如：
+
+DECLARE
+  l_sql VARCHAR2(4000);
+  l_num PLS_INTEGER;
+  
+  --定义记录
+  TYPE wk_rd IS RECORD(
+        EID BIM_WEEKLYMEETING.EAF_ID%TYPE,
+        ENAME BIM_WEEKLYMEETING.EAF_NAME%TYPE
+  );
+  one_rd wk_rd;
+  
+  --定义集合数组
+  TYPE list IS TABLE OF one_rd%TYPE INDEX BY PLS_INTEGER;
+  --定义集合变量
+  one_obj list;
+  --定义集合指针
+  l_cur PLS_INTEGER;
+  
+  --定义游标编码
+  one_var SYS_REFCURSOR;
+BEGIN
+  l_num:=5;
+  OPEN one_var FOR 'SELECT EAF_ID,EAF_NAME FROM BIM_WEEKLYMEETING WHERE ROWNUM < :NUM' USING l_num;
+       FETCH one_var BULK COLLECT INTO one_obj;
+  CLOSE one_var;
+  
+  --显示集合中的数据
+  l_cur:=one_obj.FIRST;
+  WHILE (l_cur IS NOT NULL)
+  LOOP
+      one_rd:=one_obj(l_cur);
+      DBMS_OUTPUT.put_line('EAF_ID是：'||one_rd.EID);
+      DBMS_OUTPUT.put_line('EAF_NAME是：'||one_rd.ENAME);
+      DBMS_OUTPUT.put_line('-----华丽的分割线-------');
+      l_cur:=one_obj.NEXT(l_cur); 
+  END LOOP;
+END;
+
+当有多行数据的时候就将EXECUTE IMMEDIATE l_sql INTO 变量 替换成 EXECUTE IMMEDIATE l_sql BULK COLLECT INTO 变量。
+
+DECLARE
+  l_sql VARCHAR2(4000);
+  l_num PLS_INTEGER;
+  
+  --定义记录
+  TYPE wk_rd IS RECORD(
+        EID BIM_WEEKLYMEETING.EAF_ID%TYPE,
+        ENAME BIM_WEEKLYMEETING.EAF_NAME%TYPE
+  );
+  one_rd wk_rd;
+  
+  --定义集合数组
+  TYPE list IS TABLE OF one_rd%TYPE INDEX BY PLS_INTEGER;
+  --定义集合变量
+  one_obj list;
+  --定义集合指针
+  l_cur PLS_INTEGER;
+BEGIN
+  l_num:=5;
+  l_sql:='SELECT EAF_ID,EAF_NAME FROM BIM_WEEKLYMEETING WHERE ROWNUM < :NUM';
+  EXECUTE IMMEDIATE l_sql BULK COLLECT INTO one_obj
+  USING l_num;
+  
+  --显示集合中的数据
+  l_cur:=one_obj.FIRST;
+  WHILE (l_cur IS NOT NULL)
+  LOOP
+      one_rd:=one_obj(l_cur);
+      DBMS_OUTPUT.put_line('EAF_ID是：'||one_rd.EID);
+      DBMS_OUTPUT.put_line('EAF_NAME是：'||one_rd.ENAME);
+      DBMS_OUTPUT.put_line('-----华丽的分割线-------');
+      l_cur:=one_obj.NEXT(l_cur); 
+  END LOOP;
+END;
+
+动态SQL对集合和对象是支持的，具体使用参考百度。
+
+
+动态PL/SQL：
+
+和动态SQL类似，就是将PL/SQL块的代码放到字符串中，通过绑定参数，用EXECUTE IMMEDIATE语句动态执行的方法。强大，但目前应该不会使用到，且使用起来有难度。
+
+解析特别长的SQL时，可以使用DBMS_SQL(); --不是首选，用到时候再查。
+
+
+11g新特性：略。
+
+DBMS_SQL.TO_REFCURSOR函数。
+DBMS_SQL.TO_CURSOR函数。
+
+

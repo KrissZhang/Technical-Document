@@ -1,0 +1,37 @@
+function commonclass() {
+
+};
+
+commonclass.prototype = {
+    GetCurrentUserId :function () {
+        return $('#eaf_uid').val();
+    },
+	//下拉框文本框组合控件列表显示格式化方法
+    getcbAndTbTextByRowData:function(value, row, index) {
+		//XXXXX
+		
+    }
+}
+
+var common = new commonclass();
+
+
+
+在外部文件中引入该文件，然后使用：
+
+urlPath = common.getcbAndTbTextByRowData(clsid,sProjId,eaf_id);
+
+的方式调用。
+
+
+
+
+
+
+
+
+
+
+
+
+

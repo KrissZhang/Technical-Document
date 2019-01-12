@@ -1,0 +1,113 @@
+1.Redis是一种key-value形式的存储系统，基于内存，非常高效，同时支持比较丰富的数据结构，还支持数据在硬盘的持久化。
+
+2.根据Redis的特性，很适合做缓存服务器。
+
+3.windows下的安装：
+
+(1)windows版下载地址：https://github.com/MicrosoftArchive/redis/releases，安装后，双击redis-server.exe启动服务，双击redis-cli.exe打开redis客户端。
+
+(2)如果未注册为windows服务，在安装目录下使用命令：redis-server--service-install redis.windows.conf来安装服务。如果出现1072错误则先卸载服务再安装。
+
+(3)通过命令设置键值：set myKey abc，通过命令获取键值：get myKey。
+
+4.可视化工具：
+
+Redis Desktop Manager
+
+5.在Java中的基本使用：
+
+(1)引入包：jedis-3.0.1.jar。
+
+(2)
+
+		Jedis jedis = new Jedis("localhost");
+		if("PONG".equals(jedis.ping())) {  //判断服务是否可用
+			System.out.println("redis连接成功！！！");
+			String value = jedis.get("myKey");
+			System.out.println("redis中缓存的值：" + value);
+		}
+
+6.在Spring中使用Redis：
+
+(1)追加包：commons-pool2-2.2.jar、jedis-2.4.2.jar、spring-data-redis-1.3.0.RELEASE.jar，这里可能因为包的版本引起冲突。
+
+(2)在applicationContext.xml中配置：
+
+    <!-- redis连接池配置 -->
+	<bean id="jedisPoolConfig" class="redis.clients.jedis.JedisPoolConfig">
+        <property name="maxTotal" value="32"></property>
+        <property name="maxIdle" value="6"></property>
+        <property name="testOnBorrow" value="true" />
+    </bean>
+
+	<!-- redis连接工厂配置 -->
+    <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory" destroy-method="destroy">
+        <property name="poolConfig" ref="jedisPoolConfig"></property>
+        <property name="hostName" value="localhost"></property>
+        <property name="port" value="6379"></property>
+        <property name="password" value=""></property>
+        <property name="timeout" value="15000"></property>
+        <property name="usePool" value="true"></property>
+    </bean>
+    
+    <!-- redisTemplate -->
+    <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate">
+        <property name="connectionFactory" ref="jedisConnectionFactory"></property>
+        <property name="keySerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer" />
+        </property>
+        <property name="valueSerializer">
+            <bean class="org.springframework.data.redis.serializer.JdkSerializationRedisSerializer" />
+        </property>
+    </bean>
+    
+    <!-- stringRedisTemplate -->
+    <bean id="stringRedisTemplate" class="org.springframework.data.redis.core.StringRedisTemplate">
+        <property name="connectionFactory" ref="jedisConnectionFactory"></property>
+        <property name="keySerializer">
+            <bean class="org.springframework.data.redis.serializer.StringRedisSerializer" />
+        </property>
+    </bean>
+	
+(3)在Dao层中以如下方式获取内存数据：
+
+	@Autowired
+	private RedisTemplate<String,String> redisTemplate;
+	
+	@Autowired
+	private StringRedisTemplate stringRedisTemplate;
+	
+	/**
+	 * 查询redis内存中的数据(可以使用RedisTemplate和StringRedisTemplate，使用RedisTemplate操作字符串时需要先修改序列化方式，操作其他结构时不用，字符串的处理一般用StringRedisTemplate)
+	 * @param key 键
+	 * @return 键值对象
+	 */
+	public JSONObject getRedisData(String key) {
+		/*
+		RedisSerializer<String> stringSerializer = new StringRedisSerializer();
+		redisTemplate.setKeySerializer(stringSerializer);
+		redisTemplate.setValueSerializer(stringSerializer);
+		redisTemplate.setHashKeySerializer(stringSerializer);
+		redisTemplate.setHashValueSerializer(stringSerializer);
+		*/
+		
+		JSONObject obj = new JSONObject();
+		String rValue = redisTemplate.opsForHash().get("RHash", "KEY1").toString();
+		
+		obj.put("VALUE", rValue);
+		
+		return obj;
+		
+		/*
+		JSONObject obj = new JSONObject();
+		String rId = stringRedisTemplate.opsForValue().get(key).toString();
+		
+		obj.put("ID", rId);
+		
+		return obj;
+		*/
+	}
+	
+7.
+	
+	

@@ -1,0 +1,683 @@
+1.OCI：
+
+ORACLE中总是利用OCI将SQL语句传递到数据库中来获取数据。
+
+2.5个核心语句：SELECT、INSERT、UPDATE、DELETE、MERGE。
+
+(1)SELECT语句：SELECT将整个语句的各个部分按照一定顺序不断操作，得到最终结果后返回。
+
+书写顺序：SELECT、DISTINCT->FROM->WHERE->GROUP BY->HAVING->ORDER BY
+执行顺序：FROM->WHERE->GROUP BY->HAVING->SELECT、DISTINCT->ORDER BY
+
+FROM：指定查询对象，范围包括的连接条件及谓词ON。连接顺序按照：交叉连接、内连接、外连接来处理。
+WHERE：筛选数据，NULL（未知）被当成false来处理。
+GROUP BY：分组后，查询列表只能包括分组字段和聚合字段。ROLLUP--部分求和，CUBE--交叉分类值。
+HAVING：对分组结果的筛选。
+SELECT：查询列表。用一个SELECT来生成结果中的某一列的值时只能返回一行，并且每一行都会执行，效率极低。（标量子查询）
+DISTINCT：其他语句执行完后，对结果集去重。
+ORDER BY：对最终结果进行排序。排序的效率取决于数据集的数据量。
+
+(2)INSERT语句：向单表或多表中插入数据。
+
+单表插入1：
+
+如：INSERT INTO EAF_ACM_USER (EAF_ID,EAF_NAME) VALUES (SYS_GUID(),'2333');
+
+单表插入2：
+
+如：
+
+	INSERT INTO BIM_QUALITY_PROBLEM (EAF_ID,EAF_NAME)
+		SELECT EAF_ID,EAF_NAME FROM EAF_ACM_USER 
+			WHERE EAF_ID = '00000000000000000000000000000000' 
+
+多表插入：
+
+	INSERT FIRST[ALL]
+		WHEN EAF_COMPANY = '上海宝冶集团有限公司' THEN 
+			INTO BIM_QUALITY_PROBLEM (EAF_ID,EAF_NAME) VALUES (EAF_ID,NULL)
+		WHEN EAF_COMPANY = '测试单位1' THEN
+			INTO BIM_SECU_PROBLEM (EAF_ID,EAF_NAME) VALUES (EAF_ID,NULL)
+		SELECT EAF_ID,EAF_COMPANY FROM EAF_ACM_USER WHERE EAF_LOGINNAME IN ('sysadmin','buyingmo')
+		
+		
+注：这里的关键字FIRST也可以使用ALL，ALL代表每行数据只要匹配一个分支就会做一次插入，而FIRST类似于if，只会匹配插入第一个分支。
+并且：这里的查询列表字段和插入列表字段数量类型必须保持一致，如果不需要插入这么多值，在VALUES()后面的列表中用NULL占位即可。
+
+(3)UPDATE语句：
+
+直接更新多个字段
+用子查询来更新一个单列的值
+子查询作为where条件来更新
+更新通过连接的表
+更新通过子查询获取的虚表
+
+(4)DELETE语句：
+
+直接删除表中某些数据
+FROM子句中使用子查询来构建删除表数据，这里返回字段应该用 "*"
+WHERE条件使用子查询
+
+(5)MERGE：
+
+获取需要更新或添加的数据，按条件更新或添加到表中，可以很方便地绑定对某个表的多种操作，如：
+
+	MERGE INTO BIM_SEC_LABELFIXED S
+	USING (
+	   SELECT EAF_ID,EAF_NAME FROM EAF_ACM_USER WHERE EAF_ID = '00000000000000000000000000000000'  
+	) T ON (S.EAF_ID = T.EAF_ID)
+	WHEN MATCHED THEN
+		UPDATE SET S.EAF_NAME = T.EAF_NAME||'2' [WHERE 条件语句]
+		DELETE WHERE S.EAF_ID = '00000000000000000000000000000000'
+	WHEN NOT MATCHED THEN
+		INSERT (EAF_ID,EAF_NAME) VALUES (T.EAF_ID,T.EAF_NAME||'1') [WHERE 条件语句];
+	
+3.SQL执行：参考汇总图。
+
+过程：
+
+语法和权限检查->查询块转换->确定执行计划并存入库高速缓存备用->实行执行计划获取返回数据
+
+一个用户访问数据库，客户端进程会和数据库服务器进程连接。
+
+SGA：系统全局内存区域。
+PGA(程序共享内存区域)：每个数据库服务器被分配的私有内存区域。
+
+SGA：
+
+共享池(包括库高速缓存)：
+
+所写的SQL语句会放在共享池的库高速缓存中以保证一定时间内相同的SQL语句不会被重复解析（硬解析时间 > 软解析时间），可以通过v$sql视图来查看已存放的SQL语句。所有的数据库对象也被放在共享池中的数据字典高速缓存对象之中。
+避免硬解析还可以减少锁存器的使用，减少等待锁对象的等待时间。
+
+完全相同的语句判定：
+
+区分大小写，区分注释的影响，所以尽量使用绑定值(变量)来尽量避免硬解析。
+
+缓冲区缓存：
+
+Oracle中通过读取块来获取SQL返回数据，而数据块可能被缓存于缓冲区中，缓冲区缓存和库高速缓存的机制类似，书写SQL时应尽可能的从缓冲区缓存中读取数据块，提升SQL效率。
+
+查询块转换：
+
+查询块以SELECT关键字标记，查询转换器将书写的SQL语句转换成效率更高的查询方式，但并不影响结果集。
+
+4.访问和连接：用于确定执行计划。
+
+访问：
+
+两种数据访问途径：全表扫描（全表扫描、快速全索引扫描），索引扫描。
+
+全表扫描是否为高效的选择取决于需要读取的数据块个数和最终返回的结果行数。数据的存储方式和谓词舍弃对决策有很大影响。全表扫描的效率就不一定比索引扫描的效率低。
+
+索引扫描：原理类似于字典。
+
+索引建立在表中的一个或多个列或列的表达式上，包括行编号和列值。行编号标记表中的行，包含两个地址：该行数据块的文件数据存放地址，直接定位到该行的地址。
+
+通过索引访问数据时，先用索引对谓词提供的标准进行匹配，然后直接用行编号去获取数据块。
+
+所以，通过索引访问一行数据，至少需要访问两个数据块：索引块和数据块。
+
+索引结构、索引扫描类型：略。
+
+
+联结：
+
+FROM子句处理多个表时优化器会确定最合适的联结方法。
+
+有多种联结方式，其中使用外联结的时候，需要固定驱动表和内层表，可能会影响执行计划。
+
+5.SQL是关于集合的：
+
+(1)集合运算：将两个或多个SELECT语句的结果合并成一个结果集。
+
+Oracle中包含四种集合运算：UNION(合并去重)、UNION ALL(合并)、MINUS(查询1相对于查询2的不重复差集)、INTERSECT(查询1相对于查询2的交集不重复行)。
+
+注：列的数量和类型必须一致，ORDER BY不能在某个查询中单独使用，列名取第一个查询。对于UNION和INTERSECT来说，查询之间可以无序，另外两个应当考虑顺序。
+
+MINUS，如：
+
+SELECT EAF_ID,EAF_NAME FROM EAF_ACM_USER WHERE EAF_NAME IN ('系统管理员','毛浩')
+MINUS
+SELECT EAF_ID,EAF_NAME FROM EAF_ACM_USER WHERE EAF_NAME IN ('毛浩')
+
+result：返回'系统管理员'所在的数据行。
+
+INTERSECT，如：
+
+SELECT EAF_ID,EAF_NAME FROM EAF_ACM_USER WHERE EAF_NAME IN ('系统管理员','毛浩')
+INTERSECT
+SELECT EAF_ID,EAF_NAME FROM EAF_ACM_USER WHERE EAF_NAME IN ('毛浩')
+
+result：返回'毛浩'所在的数据行。
+
+(2)集合与空值：
+
+SQL中的空值指的是未知，不存在特定值。默认不会返回匹配值为空值的数据。所有空值会被当做相等的来对待。
+
+GROUP BY和ORDER BY会将空值作为单独一行来处理。
+
+在聚合函数中空值会被排除出去。
+
+NULLS FIRST/NULLS LAST：会将空值结果行排在开头或结尾。
+
+6.SQL执行计划：
+
+解释计划：执行SQL时应当采用的预期执行计划。
+
+执行计划：执行SQL语句时实际发生的执行计划。
+
+有的时候无法实际执行某些语句，则可以通过解释计划和SQL监控来诊断SQL语句的性能问题。
+
+PL/SQL Developer中可以使用F5打开解释计划窗口页面，从左至右缩进最多的最先执行，如果缩进相同，从上至下，先后执行。
+
+7.高级分组：
+
+GROUP BY 和 HAVING 的基本用法：略。
+
+CUBE扩展：对分组字段增加空值连接其他字段的情况并去除重复值。
+
+如：
+
+SELECT EAF_ID,EAF_NAME FROM BIM_SEC_LABELFIXED WHERE EAF_ID NOT IN ('1','2','3','4','5','6','7','8')
+       GROUP BY CUBE(EAF_ID,EAF_NAME)
+       
+SELECT EAF_ID,EAF_NAME FROM BIM_SEC_LABELFIXED WHERE EAF_ID NOT IN ('1','2','3','4','5','6','7','8')
+       GROUP BY EAF_ID,CUBE(EAF_NAME)
+	   
+可以用GROUPING()方法来扩展报告为空的字段是本来就为空(返回0)，还是通过CUBE()扩展(返回1)为空的。
+
+如：
+
+SELECT '0ECA5D5831CDCB75229BD45C152B6811' AS EAF_ID,NULL AS EAF_NAME,GROUPING(NULL) AS GPI,DECODE(GROUPING(NULL),0,'原生','扩展') FROM DUAL 
+       GROUP BY '0ECA5D5831CDCB75229BD45C152B6811',CUBE(NULL)
+UNION ALL
+SELECT EAF_ID,EAF_NAME,GROUPING(EAF_NAME) AS GPI,DECODE(GROUPING(EAF_NAME),0,'原生','扩展') FROM BIM_SEC_LABELFIXED WHERE EAF_ID NOT IN ('1','2','3','4','5','6','7','8')
+       GROUP BY EAF_ID,CUBE(EAF_NAME)
+	   
+	   
+GROUPING_ID()：与GROUPING()类似：但返回的是矢量。
+
+GROUPING SETS：分组集。
+
+下面两个语句结果集等价：
+
+SELECT EAF_NAME,EAF_CREATOR FROM BIM_SEC_LABELFIXED WHERE EAF_ID NOT IN ('1','2','3','4','5','6','7','8') GROUP BY GROUPING SETS((EAF_CREATOR),(EAF_NAME));
+
+-------------
+
+SELECT '' AS EAF_NAME,EAF_CREATOR FROM BIM_SEC_LABELFIXED WHERE EAF_ID NOT IN ('1','2','3','4','5','6','7','8') GROUP BY EAF_CREATOR
+UNION ALL
+SELECT EAF_NAME AS EAF_NAME,'' AS EAF_CREATOR FROM BIM_SEC_LABELFIXED WHERE EAF_ID NOT IN ('1','2','3','4','5','6','7','8') GROUP BY EAF_NAME
+
+ROLLUP()的使用：
+
+GROUP BY ROLLUP(A,B,C)：即GROUP BY A,B,C  GROUP BY A,B  GROUP BY A  GROUP BY NULL的并集并去重。
+
+GROUP BY A,ROLLUP(A,B)：即GROUP BY A,A,B  GROUP BY A,A  GROUP BY A,NULL的并集并去重。
+
+8.分析函数（窗口函数OLAP）：
+
+基于分组来计算总量值，分析函数与聚合函数不同，为每个分组返回多行数据。分析函数总是在ORDER BY之前执行。
+
+分析函数基本语法：
+
+function1(arg1,arg2..argn)
+over([partition by clause][order by clause] [windowing-clause])
+
+分析函数无法嵌套，并且不是所有的分析函数都支持开窗语句。
+
+聚合函数也有分析模式和非分析模式，聚合函数在分析模式下的使用和分析函数类似。
+
+开窗语句：
+
+默认的开窗语句为：ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW  -- 从分区启示行到当前行
+跨越整个分区的开窗语句：ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+细粒度开窗语句：ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING  -- 当前行前2到当前行后2
+
+分析函数详细：
+
+lag：访问结果集中前面的行。
+lead：访问结果集中后面的行。
+
+first_value：获取窗口中第一行数据列。
+last_value：获取窗口中最后一行数据列。
+
+nth_value：获取结果集中任意一行。
+
+rank：返回数据行在排序后结果集中的位置。相同时，排序相同，跳过排序号，所以不一定是连续的。
+dense_rank：与rank相比，等值排序相同，不会跳过排序值。
+row_over:无论是否有等值，都返回连续不同的排序值。不支持开窗。
+
+ratio_to_report：计算分区中某个值与和值的比率。
+
+percent_rank：以0到1之间的分数形式，返回某个值在分区中的排名。
+
+percentile_cont：计算内插值。(?)
+
+percentile_disc：与percentile_cont类似，是离散分布模型，percentile_cont是连续分布模型。
+
+NTILE：对分区进行划分为每个桶，并为每个桶配置一个标号。
+
+STDDEV：为分区中的某些数据计算标准偏差。
+
+LISTAGG：将来自多个行中的值转化为表格形式。
+
+
+并行：？不懂。
+
+最常用的示例：
+
+--1.分组排序：
+SELECT T.* FROM (
+       SELECT U.EAF_NAME,U.EAF_COMPANY,DENSE_RANK() OVER(PARTITION BY U.EAF_COMPANY ORDER BY U.EAF_CREATETIME ASC) AS IDX FROM EAF_ACM_USER U
+) T WHERE T.IDX <= 2 ORDER BY T.EAF_COMPANY ASC NULLS FIRST
+
+--2.分析模式的聚合函数：
+SELECT S.EAF_NAME,S.BIM_ACTINV,AVG(S.BIM_ACTINV) OVER(PARTITION BY S.BIM_INVMID ORDER BY S.EAF_CREATETIME ASC
+             ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING 
+       ) AS AVGVALUE FROM BIM_INV_INVSUB S 
+WHERE S.BIM_INVMID = '7AD0916D7B04E151BE3CBAF7514168F4'
+
+
+9.MODEL子句：可以像操纵Excel一样来操作SQL数据，最核心的作用在于支持跨行引用、多单元格引用以及单元格聚合。可以用于替换联结（特别是自连接）来制作表数据。
+
+(1)如：
+
+SELECT BIM_YEAR,BIM_MONTH,BIM_WEEK,BIM_DEVIATION,BIM_CORRECT FROM BIM_INV_INVMAIN I 
+WHERE I.BIM_YEAR = '2018' AND I.BIM_MONTH = '9' AND I.BIM_UNIT = '92EC5A88508B8AC1C7C472BA3CF053A5' --查主表数据
+MODEL RETURN UPDATED ROWS  --声明此语句为MODEL语句
+PARTITION BY (BIM_YEAR)  --按年分区
+DIMENSION BY (BIM_MONTH,BIM_WEEK)  --声明数组索引
+MEASURES (BIM_DEVIATION,BIM_CORRECT)  --声明数组
+RULES AUTOMATIC ORDER (
+      -- 声明数组规则，更新单元格数据值
+      BIM_DEVIATION[BIM_MONTH,BIM_WEEK] = BIM_DEVIATION[cv(BIM_MONTH),cv(BIM_WEEK)-1]||'-'||(cv(BIM_MONTH))||'-'||(cv(BIM_WEEK)-1),
+      BIM_CORRECT[BIM_MONTH,BIM_WEEK] = BIM_CORRECT[cv(BIM_MONTH),cv(BIM_WEEK)-1]||'-'||(cv(BIM_MONTH))||'-'||(cv(BIM_WEEK)-1)
+)
+ORDER BY BIM_YEAR,BIM_MONTH,BIM_WEEK ASC
+
+实质是实现了一个分区数组，cv()方法引用单元格，cv(year)指的是当前行数组当前的year值，BIM_DEVIATION[cv(BIM_MONTH),cv(BIM_WEEK)-1]指的是当前行数组上一周的BIM_DEVIATION值。
+
+(2)利用FOR循环来指定左侧值列表：
+
+如：
+
+SELECT BIM_YEAR,BIM_MONTH,BIM_WEEK,BIM_DEVIATION,BIM_CORRECT FROM BIM_INV_INVMAIN I 
+WHERE I.BIM_YEAR = '2018' AND I.BIM_MONTH = '9' AND I.BIM_UNIT = '92EC5A88508B8AC1C7C472BA3CF053A5' --查主表数据
+MODEL RETURN UPDATED ROWS  --声明此语句为MODEL语句
+PARTITION BY (BIM_YEAR)  --按年分区
+DIMENSION BY (BIM_MONTH,BIM_WEEK)  --声明数组索引
+MEASURES (BIM_DEVIATION,BIM_CORRECT)  --声明数组
+RULES AUTOMATIC ORDER (
+      -- 声明数组规则，更新单元格数据值
+      BIM_DEVIATION[BIM_MONTH,BIM_WEEK] = BIM_DEVIATION[cv(BIM_MONTH),cv(BIM_WEEK)-1]||'-'||(cv(BIM_MONTH))||'-'||(cv(BIM_WEEK)-1),
+      BIM_CORRECT[BIM_MONTH,FOR BIM_WEEK FROM 3 TO 4 INCREMENT 1] = '0'  --FOR循环指定部分值
+)
+ORDER BY BIM_YEAR,BIM_MONTH,BIM_WEEK ASC
+
+(3)MODEL RETURN UPDATED ROWS：表示仅返回通过RULER规则更新的行，如果仅适用MODEL，则更新和未更新的数据行都会返回。
+RULES AUTOMATIC ORDER：表示排序顺序。也可以显式指定行排序顺序：
+
+如：
+
+SELECT BIM_YEAR,BIM_MONTH,BIM_WEEK,BIM_DEVIATION,BIM_CORRECT FROM BIM_INV_INVMAIN I 
+WHERE I.BIM_YEAR = '2018' AND I.BIM_MONTH = '9' AND I.BIM_UNIT = '92EC5A88508B8AC1C7C472BA3CF053A5' --查主表数据
+MODEL RETURN UPDATED ROWS  --声明此语句为MODEL语句
+PARTITION BY (BIM_YEAR)  --按年分区
+DIMENSION BY (BIM_MONTH,BIM_WEEK)  --声明数组索引
+MEASURES (BIM_DEVIATION,BIM_CORRECT)  --声明数组
+RULES (
+      -- 声明数组规则
+      BIM_DEVIATION[BIM_MONTH,BIM_WEEK] ORDER BY BIM_MONTH,BIM_WEEK ASC = BIM_DEVIATION[cv(BIM_MONTH),cv(BIM_WEEK)-1]||'-'||(cv(BIM_MONTH))||'-'||(cv(BIM_WEEK)-1),
+      BIM_CORRECT[BIM_MONTH,FOR BIM_WEEK FROM 3 TO 4 INCREMENT 1] = '0'  --FOR循环指定部分值
+)
+ORDER BY BIM_YEAR,BIM_MONTH,BIM_WEEK ASC
+
+(4)求解顺序：行内和行间都可以指定求解顺序。
+
+行间顺序：SEQUENTIAL ORDER -- 按在列表中的顺序求解。AUTOMATIC ORDER -- 依赖关系由ORACLE自动解决。
+
+(5)聚合：
+
+MODEL子句可以在一定维度上使用聚合函数从而实现数据聚合，略。
+
+(6)迭代：使用ITERATE(n)来执行一个表达式n次，略。
+
+PRESENTV：在此处来指定处理空值。
+KEEP NAV：
+IGNORE NAV：
+
+(7)查找表：略。
+
+(8)MODEL子句调优：略。
+
+10.子查询因子化：
+
+(1)WITH标准用法：
+
+WITH T1 AS (
+     SELECT I.* FROM BIM_INV_INVMAIN I WHERE EXTRACT(YEAR FROM I.EAF_CREATETIME) = '2018'
+),
+T2 AS (
+     SELECT I.* FROM BIM_INV_INVMAIN I WHERE EXTRACT(YEAR FROM I.EAF_CREATETIME) = '2017'
+)
+SELECT * FROM T1
+UNION ALL
+SELECT * FROM T2
+
+(2)SQL优化：
+
+ORACLE可能将因子化的结构当成临时表来处理，以提高多次访问时的性能。
+
+(3)递归子查询：
+
+SELECT...CONNECT BY结构。（前序遍历）-- 还是这个好用。
+
+如：
+
+SELECT N.*,LEVEL FROM BIM_DMM_NAV N CONNECT BY PRIOR N.EAF_ID = N.EAF_PID
+       START WITH N.EAF_ID = '502E900450F24D4AA92585BEFE6A36E5'
+       ORDER BY LEVEL,N.EAF_CREATETIME ASC
+	   
+CONNECT BY PRIOR N.EAF_ID = N.EAF_PID ：递归条件，这里对匹配顺序有要求。
+START WITH：开始位置。
+LEVEL：深度伪列。
+
+RSF：要比CONNECT BY灵活，但是有很多限制条件。（层级遍历）
+
+WITH T (LVL,EAF_ID,EAF_NAME,EAF_PID) AS (
+   SELECT 1,EAF_ID,EAF_NAME,EAF_PID FROM BIM_DMM_NAV WHERE EAF_ID = '502E900450F24D4AA92585BEFE6A36E5'
+   UNION ALL
+   SELECT LVL,N.EAF_ID,N.EAF_NAME,N.EAF_PID FROM T,BIM_DMM_NAV N
+   WHERE T.EAF_ID = N.EAF_PID
+)
+SELECT * FROM T
+
+限制：
+
+不能用DISTINCT和GROUP BY。
+不能用MODEL子句。
+不能用聚合函数。
+不能引用query_name的子查询。
+不能引用query_name作为右表的外链接。
+
+SYS_CONNECT_BY_PATH：用来返回组成层级直到当前行的值。
+
+如：
+
+SELECT N.*,LEVEL,SYS_CONNECT_BY_PATH(EAF_NAME,':') FROM BIM_DMM_NAV N CONNECT BY PRIOR N.EAF_ID = N.EAF_PID
+       START WITH N.EAF_ID = '502E900450F24D4AA92585BEFE6A36E5'
+       ORDER BY LEVEL,N.EAF_CREATETIME ASC
+	   
+CONNECT_BY_ROOT：返回当前行的根节点。
+
+如：
+
+SELECT N.*,LEVEL,CONNECT_BY_ROOT EAF_NAME AS ROOTNAME FROM BIM_DMM_NAV N CONNECT BY PRIOR N.EAF_ID = N.EAF_PID
+       START WITH N.EAF_ID = '502E900450F24D4AA92585BEFE6A36E5'
+       ORDER BY LEVEL,N.EAF_CREATETIME ASC
+	   
+CONNECT_BY_ISCYCLE伪列和NOCYCLE参数：
+
+放到查询列中，使用0、1值来标记递归循环中是否发生了错误。CYCLE id SET IS_CYCLE TO '1' DEFAULT '0'，将数据行中的IS_CYCLE值设为1或0。
+
+CONNECT_BY_ISLEAF伪列：
+
+用来在层级数据中标识叶子节点。
+
+11.半联结与反联结：
+
+//TODO
+//本章为SQL优化的内容，后面再来看。
+
+12.索引：
+
+//TODO
+//本章为SQL性能内容，后面来看。
+
+13.SELECT以外的内容：DML语句。
+
+(1)INSERT：
+
+包括快速方法（直接路径法）和慢速方法（常规方法）。
+
+直接路径法：如：INSERT /*+ append */ INTO TABLE ('列表') VALUES ('值列表')
+
+直接路径插入比常规插入要快得多，直接路径插入要做的工作少得多，但也有弊端：串行运算（同一时间只能有一个进程直接路径插入）、不会使用已经分配给表的空闲空间，仅适用于大批量插入数据。
+
+多表插入：
+
+如：
+
+INSERT ALL
+       INTO BIM_QUALITY_PROBLEM (EAF_ID,EAF_NAME) VALUES (EID,ENAME)
+       INTO BIM_SECU_PROBLEM (EAF_ID,EAF_NAME) VALUES (EID,ERENAME)
+SELECT 'X1' AS EID,'Y1' AS ENAME,'Z1' AS ERENAME
+       FROM DUAL;
+	   
+条件插入：
+
+INSERT ALL
+       WHEN 1=1 THEN
+       INTO BIM_QUALITY_PROBLEM (EAF_ID,EAF_NAME) VALUES (EID,ENAME)
+       WHEN EID != 'X' THEN
+       INTO BIM_SECU_PROBLEM (EAF_ID,EAF_NAME) VALUES (EID,ERENAME)
+SELECT 'X' AS EID,'Y1' AS ENAME,'Z1' AS ERENAME
+       FROM DUAL;
+	   
+(2)DML错误日志：这个还是让DBA来搞吧。
+
+使100万条数据插入表中不会因为几行数据出错而失败。将出错的数据转移放到错误记录表中。
+
+LOG ERRORS子句在其他DML语句中也适用。
+
+使用方法：
+
+用DBMS_ERRLOG.CREATE_ERROR_LOG来创建错误日志表。 EXECUTE DBMS_ERRLOG.CREATE_ERROR_LOG('主表名','错误日志表名')
+在INSERT语句中声明LOG ERRORS子句。INSERT INTO 主表名 VALUES ('值列表') LOG ERRORS INTO '错误日志表名' REJECT LIMIT UNLIMITED;  -- 即使主表回滚，错误日志表中的记录也不会回滚。不支持LOB、LONG和对象类型。
+
+(3)UPDATE：
+
+CTAS：更新大量数据时性能很差，可以考虑CTAS重建表的方式，即：创建一张新表，然后用新表替换原来那张表。后续外键和权限也需要重建，让DBA搞。
+
+(4)DELETE：
+
+大量删除时效率差，和更新一样采用表重建。
+
+(5)MERGE：数据库级的增删。
+
+MERGE INTO EAF_ACM_USER U
+      USING (SELECT '3334' AS EID,'3335' AS ENAME FROM DUAL) T
+      ON (T.EID = U.EAF_ID)
+      WHEN MATCHED THEN
+           UPDATE SET U.EAF_NAME = T.ENAME
+           DELETE WHERE U.EAF_ID = T.EID
+      WHEN NOT MATCHED THEN
+           INSERT (EAF_ID,EAF_NAME) VALUES (T.EID,T.ENAME)
+		   
+14.事务处理：
+
+(1)事务：一系列必须作为一个整体一起成功或失败的SQL语句。一个事务可以包含多个DML语句，但只能包含一个DDL语句。
+
+(2)ACID：原子性（同时成功或失败）、一致性（事务将数据库从一个一致状态带到另一个一致状态）、隔离性（直到事务提交，对其他事务都是不可见的）、持久性（提交后事务的修改是永久性的）。
+
+(3)隔离级别：
+
+			        脏读             不可重复读             幻读
+未提交读            允许                允许                允许
+提交读               X                  允许                允许
+可重复读             X                   X                  允许
+序列化               X                   X                    X
+
+脏读：读取一个未提交的事务。
+不可重复读：事务第二次执行同一个查询，因为其他事务被提交，获取到了不同的查询结果。（着重于UPDATE）控制方法需要锁行。
+幻读：与不可重复读比较类似，但着重于INSERT、DELETE，控制方法需要锁表。
+
+应当设置合适的隔离级别，既不发生数据不一致的问题，又不会因为隔离级别过高导致冲突阻塞过多。
+
+ORACLE不支持未提交读，所以不用担心脏读的问题。
+
+多版本读：ORACLE能够根据事务请求的时间点以及事务隔离级别来同时显示数据的多个版本。
+
+(4)事务控制语句：
+
+Commit：提交。
+Savepoint：保存点。相当于分阶段。设置保存点：savepoint sp1;
+RollBack：回滚。回滚到最开始或某个保存点。回滚到保存点：rollback to savepoint sp1;
+Set Transaction：设置事务。
+Set Constraints：设置约束。很少使用。
+
+(5)自治事务：
+
+在主事务中可以选择能够从其他事务中进行调用的独立事务。自治事务可以提交或回滚其修改而不影响主事务。
+
+会绕开正常的数据库行为，尽可能少用。
+
+15.测试：
+
+//TODO
+//先不看
+
+16.计划稳定性：
+
+//TODO
+//先不看
+
+17.计划控制：
+
+//TODO
+//先不看
+
+18.其他SQL结构：
+
+(1)条件逻辑结构：
+
+DECODE：ORACLE特有函数。只能做等值判断，不太好，用CASE...WHEN...替换。
+
+CASE：包括简单式CASE和搜索式CASE。
+
+-- 简单CASE
+SELECT CASE BIM_TASKTYPE 
+   WHEN '1' THEN '督办任务'
+   ELSE '计划任务' END AS TASKTYPE
+FROM BIM_CONF_TASK     
+
+-- 搜索式CASE
+SELECT CASE
+       WHEN TO_CHAR(EAF_CREATETIME,'yyyy-mm-dd') < '2018-01-01' THEN 'BEFORE'
+       WHEN TO_CHAR(EAF_CREATETIME,'yyyy-mm-dd') >= '2018-01-01' THEN 'AFTER'
+       ELSE '未知' END AS DATE1
+FROM BIM_CONF_TASK
+
+空值处理：
+
+NVL：NVL(NULL,'为空时返回的值')
+NVL2：NVL2(NULL,'不为空时返回的值','为空时返回的值')
+COALESCE：COALESCE(NULL,NULL,NO-NULL)，返回第一个不为空的值。如：SELECT COALESCE(NULL,NULL,NULL,NULL,'2') AS NOTNULLVALUE FROM DUAL。
+NULLIF：如：SELECT NULLIF('1','1') FROM DUAL。如果两个值相等，则返回NULL，如果不相等则返回第一个参数值。
+
+(2)转置与反转置：两者并不是互逆的。
+
+PIVOT/UNPIVOT：IN 结构语句不支持动态列，而必须要转换为XML显示，限制太大，不好用，略。
+
+(3)复制表：
+
+CREATE TABLE 表名 AS SELECT * FROM 源表
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	   
+
+	   
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

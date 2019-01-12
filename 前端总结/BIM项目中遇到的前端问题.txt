@@ -1,0 +1,29 @@
+1.在将url作为参数通过post进行传递时，注意转码，否则传递的参数部分无法传递过去。
+
+2.css:
+
+overflow:规定当内容溢出元素框时发生的事情，auto:如果内容被修剪，则浏览器会显示滚动条。
+padding、margin:内边距、外边距，也可以适用auto。
+vertical-align:行内元素的基线相对于该元素所在行的基线的垂直对齐，middle:放置在父元素的中部。
+
+3.js复制文本：
+
+引入组件：<script src="/js/clipboard.min.js" type="text/javascript"></script>
+
+复制按钮：
+
+<input type="button" id="copyLink" value="复制链接" onClick="copyLink()" data-clipboard-action="copy" data-clipboard-target="#httpLink" class="btn" style="background:#3FD2C0;border:#3FD2C0 1px solid;width:150px;" />
+
+复制处理方法：
+
+function copyLink(){
+	var clipboard = new Clipboard("#copyLink");
+	clipboard.on('success', function(e){
+		$.messager.alert('提示','复制成功！');
+	});
+	clipboard.on('error', function(e) {
+		$.messager.alert('提示','复制失败，请手动复制！');		
+	});
+}
+
+4.

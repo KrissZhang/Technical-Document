@@ -1,0 +1,127 @@
+1.不是所有的查询都能靠一个sql语句解决，有的时候要用java代码处理。
+
+2.存储过程对于多个sql的处理很方便，性能好但是很难维护。
+
+3.表连接时没有特殊的要求优先使用左连接，如果连接的表不是1对1对1的关系的话就有可能会出现重复数据（笛卡尔积）。
+
+4.写sql语句的时候要考虑到某些参数传与不传的情况，最好使用StringBuilder来拼接sql语句。基本sql的末尾使用where 1=1方便拼串。
+
+5.多使用别名。写复杂的sql时考虑好表的主从关系。
+
+6.常用的时间格式：
+TO_CHAR(sysdate,'yyyy-MM-dd HH24:mi:ss');
+TO_DATE('2017-1-1','yyyy-MM-dd HH24:mi:ss');
+
+7.用Java代码拼接sql时注意首尾的空格。
+
+8.oracle中处理字段的模糊匹配可以使用：
+
+INSTR(LOWER('源字符串'),LOWER('查找字符串'))> 0
+
+如果查找不到返回0,查找到了返回索引,比较的两个字符串中有一个为null则返回null。
+
+9.排序：
+
+（1）排序字段是字符串时，按位排序，需要使用TO_NUMBER()将其转换成数值类型来排序。
+
+（2）如果需要动态地按照某些字段排序，可以在拼接好sql之后在外面再包装一层再排序。
+
+10.like：
+
+用like进行模糊匹配时，使用'keyword%'而不要使用'%keyword'和'%keyword%'。
+后面两种情况可以使用INSTR('源','查找') > 0 来代替。
+
+11.查询CLOB类型的文本：
+
+SELECT dbms_lob.substr(EAF_NOTE) FROM eaf_oms_operlog_1
+
+12.PL/SQL中游标和嵌套表的使用：
+
+游标：
+
+在declare中定义游标：
+
+         cursor wk_proj
+         is
+         SELECT DISTINCT BIM_PROJ FROM BIM_WEEKLYMEETING WHERE BIM_PROJ IS NOT NULL;
+		 
+在begin中用loop循环遍历：
+
+for wk_rowproj in wk_proj loop
+
+	dbms_output.put_line(wk_rowproj.BIM_PROJ);
+ 
+end loop;
+
+注：loop循环中，可以用：游标名%rowcount   的方式来获取当前循环的索引值，如：wk_left%rowcount。    
+
+嵌套表：
+
+在declare中定义嵌套表：
+
+     --定义嵌套表类型
+     type array_table is table of VARCHAR2(1000);
+	 --定义嵌套表集合
+     right_array array_table;
+
+将sql中查询出来的数据添加到嵌套表中：
+	
+begin
+	
+execute immediate 'SELECT * FROM TABLE' bulk collect into right_array;
+
+end;
+
+取嵌套表中指定索引的值：
+
+temp:=right_array(i);
+dbms_output.put_line(temp);
+
+注：GUID这里可以用VARCHAR2(长度)来处理。
+
+13.oracle中生成guid：
+
+select sys_guid() from dual
+
+14.PL/SQL比较好的写法：
+
+declare
+begin
+  for discloseObj in (SELECT EAF_ID,BIM_MEET,BIM_PROJ FROM BIM_QS_DISCLOSE WHERE BIM_MEET IS NOT NULL) loop
+    for weekObj in (SELECT DISTINCT EAF_ID,EAF_NAME,BIM_PROJ FROM BIM_WEEKLYMEETING) loop
+      if discloseObj.BIM_PROJ=weekObj.BIM_PROJ  and  discloseObj.BIM_MEET=weekObj.EAF_NAME then
+        execute immediate 'update BIM_QS_DISCLOSE set BIM_MEET='''||weekObj.EAF_ID||''' where EAF_ID='''||discloseObj.EAF_ID||'''';
+      end if;
+    end loop;
+  end loop;
+end;
+
+15.字段类型GUID和字符串：
+
+有的时候两种类型直接连接会出现错误，可以使用TO_NUMBER()或者TO_CHAR()来解决。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

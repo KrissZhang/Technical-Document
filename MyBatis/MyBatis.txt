@@ -1,0 +1,889 @@
+1.JDBC：
+
+桥接模式，只定义接口规范，实现由厂商完成，Java都是通过JDBC连接数据库的。
+
+2.ORM：
+
+对象关系映射。ORM模型，数据库表和简单Java对象的映射关系模型。
+
+3.Hibernate：
+
+对JDBC的封装度高，全表映射，不需要写SQL语句，只需要使用HQL语言。
+
+Hibernate的配置和使用：略。
+
+Hibernate的缺点：性能差，不够灵活，对SQL的支持差。
+
+4.Mybatis简介：
+
+(1)半自动映射，需要提供POJO、SQL和映射关系。
+
+(2)Mybatis基本上能做到所有JDBC所能做到的事情。如果遵循一定的规则，Mybatis也可以自动完成映射。
+
+5.MyBatis的基本构成：
+
+SqlSessionFactoryBuilder（构造器）：根据配置信息或者代码来生成SqlSessionFactory。
+SqlSessionFactory（工厂接口）：依靠工厂来生成SqlSession。
+SqlSession（会话）：是一个既可以发送SQL去执行返回结果，也可以获取Mapper的接口。
+SQL Mapper：它是MyBatis新设计的组件，由一个Java接口和XML文件构成。需要给出对应的SQL和映射规则。它负责发送SQL去执行，并返回结果。
+
+(1)构建SqlSessionFactory：XML配置方式和代码方式。
+
+XML方式：
+
+包括：获取链接实例的数据源、决定事务范围和控制方式的事务管理器、映射器。
+
+mybatis-config.xml，如：
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration
+	PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+	<!-- 定义别名 -->
+	<typeAliases>
+		<typeAlias alias="tuser" type="com.self.mybatistest.pojo.TUser" />
+		<typeAlias alias="trole" type="com.self.mybatistest.pojo.TRole" />
+	</typeAliases>
+	
+	<!-- 定义数据库信息，默认使用development构建数据库环境 -->
+	<environments default="development">
+		<environment id="development">
+			<!-- 采用jdbc事务管理 -->
+			<transactionManager type="JDBC" />
+			
+			<!-- 配置数据库链接信息 -->
+			<dataSource type="POOLED">
+				<property name="driver" value="oracle.jdbc.driver.OracleDriver" />
+				<property name="url" value="jdbc:oracle:thin:@localhost:1521:TESTDB" />
+				<property name="username" value="SYSTEM" />
+				<property name="password" value="Zp18716331455" />
+			</dataSource>
+			
+		</environment>
+	</environments>
+	
+	<!-- 定义映射器 -->
+	<mappers>
+		<mapper resource="com/self/mybatistest/mapperxml/TUserMapper.xml" />
+		<mapper resource="com/self/mybatistest/mapperxml/TRoleMapper.xml" />
+	</mappers>
+		
+</configuration>
+
+代码方式：不好，略。
+
+(2)创建SqlSessionFactory：
+
+String resource = "mybatis-config.xml";
+InputStream inputStream = Resources.getResourceAsStream(resource);
+sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+
+(3)创建SqlSession：
+
+/**
+ * 获取SqlSession
+ * @return SqlSession
+ */
+public static SqlSession getSqlSession() {
+	return sqlSessionFactory.openSession();
+}
+
+SqlSession可以通过映射器执行配置的SQL返回结果，也可以直接引用方法执行方法参数中的SQL来返回结果。（后者是iBatis遗留下来的方式）
+
+(4)配置映射器：
+
+XML：
+
+如：
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org/DTD Mapper 3.0/EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.self.mybatistest.mapper.TUserMapper">
+	<select id="getUserById" parameterType="Integer" resultType="tuser">
+		SELECT * FROM TUSER WHERE ID = #{ID}
+	</select>
+</mapper>
+
+在mapper中定义接口：
+
+package com.self.mybatistest.mapper;
+
+import com.self.mybatistest.pojo.TUser;
+
+/**
+ * 用户接口
+ * @author Zp
+ */
+public interface TUserMapper {
+	
+	public TUser getUserById(Integer id);  //通过id获取用户
+	
+}
+
+注解：支持少，可读性不好，略。
+
+(5)执行一次查询：
+
+DAO层：
+
+/**
+ * 通过id获取用户
+ * @param id 用户id
+ * @return 用户对象
+ */
+public TUser getUserById(Integer id) {
+	TUserMapper tUserMapper = sqlSession.getMapper(TUserMapper.class);
+	TUser tUser = tUserMapper.getUserById(id);
+	return tUser;
+}
+
+6.生命周期：
+
+SqlSessionFactoryBuilder：可以构建SqlSessionFactory，生命周期存在于方法的局部，构建结束之后就废弃、回收。
+SqlSessionFactory：创建会话，SqlSessionFactory应该存在于整个生命周期中，且应该是单例的，避免消耗过多的资源。
+SqlSession：会话，相当于JDBC中的Connection对象。生命周期应该是请求数据库处理事务的过程中。线程不安全，注意隔离级别和锁机制，每次创建都必须关闭，通过finally语句来保证资源关闭。
+Mapper：接口，没有实现类，发送SQL返回我们需要的结果或执行DML语句。方法级别，最大范围和会话一样。
+
+使用单例模式基于生命周期优化数据库会话构建工具方法：
+
+package com.self.mybatistest.util;
+
+import java.io.IOException;
+import java.io.InputStream;
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
+
+/**
+ * 数据库工具类
+ * @author Zp
+ */
+public class DbUtil {
+	//工厂接口
+	private static SqlSessionFactory sqlSessionFactory = null;
+	
+	//类线程锁
+	private static final Class CLASS_LOCK = DbUtil.class;
+	
+	//日志
+	private static final Logger logger = Logger.getLogger(DbUtil.class);
+	
+	/**
+	 * 私有构造
+	 */
+	private DbUtil() {
+		
+	}
+	
+	/**
+	 * 初始化SqlSessionFactory
+	 * @throws IOException Exception
+	 */
+	private static SqlSessionFactory initSqlSessionFactory() {
+		String resource = "mybatis-config.xml";
+		InputStream inputStream = null;
+		
+		try {
+			inputStream	= Resources.getResourceAsStream(resource);
+		} catch (IOException e) {
+			logger.log(Priority.ERROR, "配置文件流加载出错");
+		}
+		
+		synchronized (CLASS_LOCK) {
+			if(sqlSessionFactory == null) {
+				sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+			}
+		}
+		
+		return sqlSessionFactory;
+	}
+	
+	/**
+	 * 获取SqlSession
+	 * @return SqlSession
+	 */
+	public static SqlSession getSqlSession() {
+		if(sqlSessionFactory == null) {
+			initSqlSessionFactory();
+		}
+		
+		return sqlSessionFactory.openSession();
+	}
+	
+}
+
+说明：
+
+对构造方法使用private，防止new对象。
+增加类线程锁，防止高并发情况下，创建了多余的对象。
+使用SqlSession.commit();来提交事务，
+使用SqlSession.rollback();来回滚事务，
+使用以下方式来关闭会话。
+finally{
+	if(SqlSession != null){
+		SqlSession.close();
+	}
+}
+
+DAO层优化写法：
+
+package com.self.mybatistest.dao;
+
+import org.apache.ibatis.session.SqlSession;
+import org.apache.log4j.Logger;
+import org.apache.log4j.Priority;
+
+import com.self.mybatistest.mapper.TUserMapper;
+import com.self.mybatistest.pojo.TUser;
+import com.self.mybatistest.util.DbUtil;
+
+/**
+ * TUser数据链接层
+ * @author Zp
+ */
+public class TUserDao {
+	//日志
+	private static final Logger logger = Logger.getLogger(TUserDao.class);
+	
+	//SqlSession
+	private SqlSession sqlSession = null;  
+	
+	/**
+	 * 构造方法
+	 */
+	public TUserDao() {
+		
+	}
+	
+	/**
+	 * 通过id获取用户
+	 * @param id 用户id
+	 * @return 用户对象
+	 */
+	public TUser getUserById(Integer id) {
+		TUser tUser = new TUser();
+		try {
+			sqlSession = DbUtil.getSqlSession();
+			TUserMapper tUserMapper = sqlSession.getMapper(TUserMapper.class);
+			tUser = tUserMapper.getUserById(id);
+		}catch(Exception ex) {
+			logger.log(Priority.ERROR, ex.getMessage());
+		}finally {
+			if(sqlSession!=null) {
+				sqlSession.close();
+			}
+		}
+		
+		return tUser;
+	}
+	
+}
+
+6.配置：
+
+(1)properties元素：属性。
+
+提供三种配置方式：
+
+property子元素、properties配置文件、程序参数传递。
+
+子元素方式：
+
+<properties>
+	<property name="" value="" />
+	<property name="" value="" />
+</properties>
+
+properties配置文件方式：
+
+如：
+
+加载一个名为jdbc.properties的文件，放入源包中。
+
+再像这样引入配置文件即可。<properties resource="" />
+
+程序参数传递：
+
+用于处理配置文件参数密文的场景。
+
+优先级：
+
+在properties元素体内指定的属性首先被读取。
+根据properties中的resource和url属性读取文件并覆盖已读取的同名属性。
+读取方法参数传递的属性，并覆盖已读取的同名属性。
+
+首选方式为properties文件，不要混合使用多种方式。
+
+(2)settings元素：默认配置也可以正常工作。大部分时间都不需要进行配置。
+
+参考设置表。
+
+<settings>
+	<setting name="" value="" />
+	</setting name="" value="" />
+</settings>
+
+(3)typeAliases元素：别名。可以在Mybatis上下文中使用。不区分大小写。
+
+系统定义别名：
+
+Mybatis已经定义的一些别名。包括一些基本类型和对象、集合类型。
+
+自定义别名：
+
+通过下面这种方式来单个定义别名：
+
+<typeAliases>
+	<typeAlias alias="tuser" type="com.self.mybatistest.pojo.TUser" />
+</typeAliases>
+
+或者扫描的方式定义别名：
+
+<typeAliases>
+	<typeAlias alias="tuser" type="com.self.mybatistest.pojo" />
+</typeAliases>
+
+@Alias("user")
+public class TUser{
+	//...
+}
+
+注意：在配置为扫描包的方式后，如果没有指定类的别名，默认以类名首字母小写的名字作为别名。
+
+(4)typeHandler：类型处理器。
+
+typeHandler允许根据项目的需要自定义设置Java传到数据库中的参数，或者处理从数据库中读取到的参数。也分为系统定义和数据库定义两种。
+
+大部分的功能由系统定义即可。自定义时不要和预设冲突。自定义时一般设置Java类型JavaType和数据库类型JdbcType，处理时映射两种类型。
+
+自定义具体使用：参考文档，略。
+
+typeHandler枚举类型：略。
+
+(5)ObjectFactory：对象工厂。大多数时候都不需要自定义。
+
+可以自己自定义对象工厂：
+
+<ObjectFactory type="com.self.objectFactory.MyObjectFactory">
+	<property name="name" value="MyObjectFactory" />
+</ObjectFactory>
+
+定义继承DefaultObjectFactory的类来给出自己的对象工厂。
+
+public class MyObjectFactory extends DefaultObjectFactory{
+	//...
+}
+
+(6)插件：略。
+
+(7)environments：配置环境。
+
+配置环境可以注册多个数据源，每个数据源的配置包括两部分，一个是数据库源的配置，一个是数据库事务的配置。
+
+如：
+
+<environments default="development">
+	<environment id="development">
+		<!-- 采用jdbc事务管理 -->
+		<transactionManager type="JDBC" />
+		
+		<!-- 配置数据库链接信息 -->
+		<dataSource type="POOLED"> 
+			<property name="driver" value="oracle.jdbc.driver.OracleDriver" />
+			<property name="url" value="jdbc:oracle:thin:@localhost:1521:TESTDB" />
+			<property name="username" value="SYSTEM" />
+			<property name="password" value="Zp18716331455" />
+		</dataSource>
+		
+	</environment>
+</environments>
+
+environments中的default属性：表明在缺省的时候应该使用哪一个数据源。
+
+environment元素：是配置一个数据源的开始。
+属性id是数据源的标识。
+transactionManager配置的数据库的事务，type属性有三个可选值：JDBC（用JDBC的方式管理事务，开发常用）、MANAGED（采用容器方式管理，JNDI常用）、自定义（特殊使用）。
+property：可配置数据源的各类属性，如：autoCommit=false
+dataSource：配置数据源的信息。type属性提供我们对数据库链接方式的配置：
+	UNPOOLED：非连接池数据库。
+	POOLED：链接池数据库。
+	JNDI：JNDI数据源。
+	自定义数据源。	
+用property来定义各种参数。
+
+数据库事务：交由SqlSession去控制，通过SqlSession去提交或者回滚。
+
+数据源：dataSource中的type属性配置，还可以自定义，略。
+
+(8)databaseIdProvider数据库厂商标识：略。
+
+(9)引入映射器的方法：
+
+首先，定义映射器接口：
+
+如：
+
+public interface TUserMapper {
+	public TUser getUserById(Integer id);
+}
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org/DTD Mapper 3.0/EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+<mapper namespace="com.self.mybatistest.mapper.TUserMapper">
+	<select id="getUserById" parameterType="Integer" resultType="tuser">
+		SELECT * FROM TUSER WHERE ID = #{ID}
+	</select>
+</mapper>
+
+引入映射器接口：
+
+文件路径引入：
+
+<mappers>
+	<mapper resource="com/self/mybatistest/mapperxml/TUserMapper.xml" />
+</mappers>
+
+包名扫描引入：
+
+<mappers>
+	<mapper resource="com.self.mybatistest.mapperxml" />
+</mappers>
+
+用类注册引入：
+
+<mappers>
+	<mapper resource="com.self.mybatistest.mapper.TUserMapper" />
+</mappers>
+
+用urlMapper.xml引入映射器：略。
+
+7.映射器：
+
+针对SQL，并通过配置生成的JavaBean返回给调用者。
+
+(1)映射器地主要元素：
+
+select：查询。可以自定义参数和返回结果集。
+insert：插入。返回插入条数。
+update：更新。返回更新条数。
+delete：删除。返回删除条数。
+parameterMap：定义参数映射关系。（即将被删除的元素，不要使用）
+sql：允许定义一部分的SQL，然后在各个地方使用它。像with的功能。
+resultMap：用来描述从数据库中加载对象，它是最复杂、最强大的元素。提供映射规则。
+cache：给定命名空间的缓存配置。
+cache-ref：其他命名空间缓存配置的引用。
+
+(2)SELECT：
+
+mybatis中，select可以接受基本类型和复杂类型参数。
+
+select元素配置包括：
+
+id：它和Mapper的命名空间组合起来是唯一的，提供Mybatis调用。
+parameterType：可以给出类的全命名，也可以给出类的别名。
+parameterMap：即将废弃。
+resultType：定义类的全路径或别名，也可以是int、double、float等参数。不能和resultMap同时使用。
+resultMap：映射集的引用，执行强大的映射功能。
+flushCache：是否清空本地缓存和二级缓存。取布尔值。
+useCache：启用二级缓存。取布尔值。
+timeout：设置超时参数。单位为秒。
+fetchSize：获取记录的总条数设定。
+statementType：告诉mybatis使用jdbc的哪个statement工作。取值为STATEMENT、PREPARED、CallableStatement。
+resultSetType：针对jdbc的resultSet接口而言，值包括：FORWARD_ONLY（游标允许向前访问）、SCROLL_SENSITIVE（双向滚动，如果数据库中的值修改过并不在resultSet中反应出来）、SCROLL_INSENSITIVE（双向滚动，及时更新）
+databaseId：提供多种数据库的支持，略。
+resultOrdered：嵌套结果集设置。
+resultSets：多个结果集的场景使用，很少使用。
+
+例子，简易数据类型：
+<select id="sel1" parameterType="string" resultType="int">
+	select count(1) as total from t_user where id like #{id}
+</select>
+
+public int countSel(String str);
+
+自动映射：
+
+settings中有个元素autoMappingBehavior可以设置是否自动映射，包括三个值：NONE（取消自动映射）、PARTIAL（默认，只会自动映射没有定义嵌套结果集映射的结果集）、FULL（全部自动映射，会降低性能）。
+如果数据库表名每个单词用下划线分隔、Java使用驼峰命名就可以使用自动映射。
+
+resultType：com.self.myproj.pojo.User
+
+这样就可以使用自动配置回填属性字段。
+
+传递多个参数：
+
+使用Map传递多个参数：业务可读性差，不用。
+
+使用注解传递多个参数：
+
+public List<User> findUserById(@Param("id")Integer id,@Param("name")String name);
+
+<select id="findUserById" resultMap="userMap">
+	...#{id}
+</select>
+
+使用JavaBean传递参数：
+
+<select id="findUserById" parameterType="com.self.myproj.params.UserParam" resultMap="userMap" >
+	...#{id}
+</select>
+
+参数个数多的时候可以选择第二种。
+
+使用resultMap映射结果集：
+
+<resultMap id="UserMap1" type="com.self.myproj.pojo.TUser">
+	<id property="id" column="id" />
+	<result property="name1" column="name1"></result>
+	<result property="name2" column="name2"></result>
+</resultMap>
+
+<select parameterType="long" id="queryId" resultMap="UserMap1">
+	select id,name1,name2 from TUser where id = #{id}
+</select>
+
+resultMap的id：定义返回Map类型。
+select中的id：指定使用哪一个属性作为主键。其中的property和column绑定。
+
+简单情况下使用resultType即可。
+
+(3)INSERT：
+
+INSERT元素配置包括：
+
+id：它和Mapper的命名空间组合起来是唯一的，提供Mybatis调用。
+parameterType：可以给出类的全命名，也可以给出类的别名。
+parameterMap：即将废弃。
+flushCache：是否清空本地缓存和二级缓存。取布尔值。
+timeout：设置超时参数。单位为秒。
+statementType：告诉mybatis使用jdbc的哪个statement工作。取值为STATEMENT、PREPARED、CallableStatement。
+keyProperty：表示哪个列作为主键。
+useGeneratedKeys：使用jdbc取出数据库内生成的主键。布尔值。
+keyColumn：指明第几列是主键。不能和keyProperty一起使用。
+databaseId：略。
+lang：自定义语言，略。
+
+例子：简单插入。
+
+<insert id="" parameterType="TUser">
+	insert into TUser () values (#{id}, #{name})
+</insert>
+
+主键回填和自定义：
+
+主键回填：传入参数无需设置主键，由数据库自己处理。
+
+<insert id="" parameterType="" useGeneratedKeys="true" keyProperty="id" >
+
+</insert>
+
+还可以在insert标签中自定义主键生成规则：
+
+<insert id="" parameterType="" useGeneratedKeys="true" keyProperty="id" >
+	<selectKey keyProperty="" resultType="" order="BEFORE">
+		select if(max(id) is null,1,max(id)+2) as newId from TUser
+	</selectKey>
+	//sql
+</insert>
+
+(4)update元素和delete元素：
+
+与insert类似。
+
+(5)参数：定义参数属性的时候，不允许换行。
+
+参数配置：#{age,javaType=int,jdbcType=NUMERIC}
+
+存储过程支持：也支持存储过程的IN、OUT、IN/OUT参数。
+
+其实大部分时候都无需配置参数，最多对空值进行判断。
+
+特殊字符串替换和处理：
+
+#：#{}，预编译字符串。
+$：${}，直译参数，不转义，如传递sql语句。select ${column} from t_table
+
+(6)sql元素：相当于with：
+
+如：
+
+<sql id="r_column">
+	id,name,note
+</sql>
+
+<select ...>
+	select <include refid="r_column" /> from TUser where id=#{id}
+</select>
+
+(7)resultMap：结果映射集。
+
+resultMap主要定义的是结果集的映射关系。目前版本只支持resultMap查询，不支持其他。
+
+resultMap元素构成：
+
+<resultMap>
+	<constructor>
+		<idArg />
+		<arg />
+	</constructor>
+	<id />
+	<result />
+	<association />
+	<collection />
+	<discriminator>	
+		<case />
+	</discriminator>	
+</resultMap>
+
+POJO没有构造函数时，用constructor来配置。
+
+<constructor>
+	<idArg column="id" javaType="int" />
+	<arg column="name" javaType="string" />
+</constructor>
+
+id元素指定哪个列是主键。
+
+result元素：配置映射关系。
+
+property：映射属性和字段。
+column：对应SQL列。
+javaType：配置Java类型。
+jdbcType：可以指定数据库类型。
+typeHandler：指定类处理器。
+
+使用map存储结果集：
+
+任何select语句都可以使用map存储，如：resultType="map"，但是可读性并不是很好。所以更多的使用POJO的方式：
+
+<resultMap id="UserMap1" type="com.self.myproj.pojo.TUser">
+	<id property="id" column="id" />
+	<result property="name1" column="name1"></result>
+	<result property="name2" column="name2"></result>
+</resultMap>
+
+级联：获取关联的对象信息。
+
+分为一对一、一对多、多对多。但是多对多不好处理，转化为相互的一对多来处理比较好（加中间表）。
+
+一对一：association
+一对多：collection
+鉴别器：可以根据实际选择采用哪个实例，允许你根据条件去关联不同的结果集，discriminator
+
+第一种级联并不好用，一般使用第二种级联的方式。
+
+<association property="本对象关联属性" column="关联对象关联属性" javaType="对应类对象类型">
+	<result property="关联对象属性名" column="关联对象数据库字段名" />
+	<result property="关联对象属性名" column="关联对象数据库字段名" />
+</association>
+
+<collection property="本对象关联属性" ofType="关联对象类型">
+	<result property="关联对象属性名" column="关联对象数据库字段名" />
+	<result property="关联对象属性名" column="关联对象数据库字段名" />
+	<association property="本对象关联属性" column="关联对象关联属性" javaType="对应类对象类型">
+		<result property="关联对象属性名" column="关联对象数据库字段名" />
+		<result property="关联对象属性名" column="关联对象数据库字段名" />
+	</association>
+</collection>
+
+<discriminator javaType="int" column="sex">
+	<case value="1" resultMap="map1" />
+	<case value="2" resultMap="map1" />
+</discriminator>
+
+一对多例子如下：
+
+	<resultMap id="rAndUMap" type="trole">
+		<id property="rid" column="RID" />
+		<result property="rName" column="RNAME" />
+		<collection property="users" ofType="tuser">
+			<id property="id" column="ID" />
+			<result property="uName" column="UNAME" />
+		</collection>
+	</resultMap>
+	<select id="queryRoleList" resultMap="rAndUMap">
+		SELECT R.*,U.* FROM TROLE R LEFT JOIN TUSER U ON R.RID = U.ROLEID
+	</select>
+	
+	//一个角色对应多个用户
+	private List<TUser> users;
+	
+	//一个用户对应一个角色
+	private Integer roleId;
+	
+	如果是一对一关系，就互相持有对方对象。
+
+(8)缓存：
+
+将热点数据保存在内存之中，目前流行的缓存服务器：Redis等。
+
+系统缓存（一级缓存和二级缓存）：
+
+默认仅开启一级缓存，针对同一个SqlSession。如果不同的SqlSession，即使Sql相同也不会取缓存。
+
+为了克服这个问题就需要使用到二级缓存，使得可以在SqlSessionFactory层面共享，需要配置（<cache />），并且POJO必须可序列化，即实现Serializable接口，具体的配置方式使用的时候查询。
+
+使用缓存服务器的时候可以自定义缓存，如针对Redis的自定义缓存，略。
+
+8.动态Sql：提供SQL语句的动态组装能力。
+
+包括下面这些元素：
+
+if、choose（相当于case...when）、trim（辅助元素）、foreach（循环）。
+
+if：条件语句。
+
+<select id="findObj" parameterType="string" resultMap="roleResultMap" >
+	select * from t_table where 1=1
+	<if test="col1!=null and col1!=''">
+		and where col = #{col1}
+	</if>
+</select>
+
+choose：
+
+<choose>
+	<when test="col1=null ">
+		...
+	</when>
+	<when test="col1='' ">
+		...
+	</when>
+	<otherwise>
+		...
+	</otherwise>
+</choose>
+
+trim：
+
+和使用习惯不一致，不使用这个。
+
+foreach：遍历，很好的支持list、set。
+
+<select id="queryId" resultType="User">
+	select * from user where index in 
+	<foreach item="item" index="下标" collection="idxlist" open="(" separator="," close=")">
+		#{item}
+	</foreach>
+</select>
+
+test：判断真值。
+
+test="type='Y' "
+
+bind：不使用。
+
+9.Mybatis底层：略。
+
+10.插件：分页插件还是自己用sql和分页类实现吧。
+
+11.Mybatis-Spring：
+
+Spring相关：略。
+
+//TODO，学完Spring，一起整合。
+
+12.使用场景：
+
+有需要的再看。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,1050 @@
+1.判断某对象非空非空字符串
+if(obj!=null && !"".equals(obj)){
+	//逻辑
+}
+
+if(sss != null && !sss.isEmpty()){
+	
+}
+
+第二种写法效率更高。
+
+2.将object对象转换为String不要使用强制转换，使用下面的封装方法：
+
+    public static String objToString(Object obj) {
+        return obj==null?"":obj.toString();
+    }
+	
+jdk1.8有内置方法更好：
+
+String s1 = Optional.ofNullable(s).orElse("空");  //为空时返回指定值	
+	
+3.JSONArray的处理：
+
+JSONArray array = new JSONArray();
+JSONObject obj = new JSONObject();
+obj.put("key1","value1");
+obj.put("key2","value2");
+array.add(obj);
+
+4.
+
+JSON.stringify({'key1':obj1,'key2':obj2});
+
+用于从一个对象解析出字符串。
+
+JSON.parse("");
+
+用于从一个字符串中解析出对象。
+
+5. 比较粗糙的分页查询：（用拼串的方式查询指定个数的数据）
+
+		//判断将总的数据分成多少组
+		int m  = 0;
+		if(array.size()%10==0){
+			m  = array.size()/10;
+		}else{
+			m  = array.size()/10+1;
+		}
+		for (int i = 0; i < m; i++) {
+			StringBuilder builder = new StringBuilder();
+			builder.append("INSERT INTO "+tbName+" ("+ colName +") " );
+			for (int j = 0; j < 10; j++) {
+				int s = i*10 + j;
+				if(s < array.size()){
+					JSONObject obj = array.getJSONObject(s);
+					String ss = buildSql(obj,tbName);
+					String st = "SELECT "+ss+" FROM DUAL ";
+					if(j != 9 && (s != array.size()-1)){
+						st += " UNION ";
+					}
+					builder.append(st);
+				}
+			}
+			base.Update(builder.toString(), new Object[]{});
+		}
+		
+		
+		
+6.比较好的jdbc写法：
+
+package com.self.test;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
+/**
+ * JDBC测试类
+ */
+class JDBCTest{
+	
+	//driver
+	private static final String DBDRIVER = "org.gjt.mm.mysql.Driver";
+	
+	//url
+	private static final String DBURL = "jdbc:mysql://localhost:3307/mytest";
+	
+	//用户名
+	private static final String DBUSER = "root";
+	
+	//密码
+	private static final String PASSWORD = "root";
+	
+	//数据库连接
+	private Connection conn = null;
+		
+    // 如果要实例化本类对象，实际上就是为了取得数据库连接，那么就把连接过程交给构造方法
+    public void DatabaseConnection() {
+        try {
+            Class.forName(DBDRIVER);
+            this.conn = DriverManager.getConnection(DBURL, DBUSER, PASSWORD);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Connection getConnection() {
+        return this.conn;
+    }
+
+    public void close() {
+        if (this.conn != null) {
+            try { // 关闭时几乎不会有问题
+                this.conn.close();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+	
+}
+
+
+-----------------------华丽的分割线-----------------------------
+
+
+		JDBCTest jdbc = new JDBCTest();
+		jdbc.DatabaseConnection();
+		Connection conn = jdbc.getConnection();
+		
+		String sql = "SELECT * FROM test1 WHERE ID = ?";
+		
+		try {
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setInt(1, 2);
+			ResultSet rs = ps.executeQuery();
+			while(rs.next()){
+				String id = rs.getString(1);
+				String name = rs.getString(2);
+				String value = rs.getString(3);
+				System.out.println(id);
+				System.out.println(name);
+				System.out.println(value);
+				System.out.println("-------");
+			}
+			
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}finally{
+			jdbc.close();
+		}
+		
+		
+7. 比较好的批量插入数据的写法：
+
+注意：日期类型在数据插入前需要特别处理，包括，空、空字符串、'2017-10-10'类型、'2017-10-10 10:10:10'类型、其他字符串格式类型。
+
+package com.self.test;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class Test {
+	
+	//用来构造批量测试数据的集合
+	private static List<Map<String,Object>> list = new ArrayList<Map<String,Object>>();
+	
+	//初始化数据
+	public static void initData(){
+		for(int i=0;i<20002;i++){
+			Map<String,Object> map = new HashMap<String,Object>();
+			map.put("ID", i+1);
+			map.put("NAME", "name"+(i+1));
+			map.put("VALUE", "value"+(i+1));
+			map.put("CREATE_DATE", new Date().toLocaleString());
+			list.add(map);
+		}
+		
+		//这里测试能否排除特殊字符的干扰
+		Map<String,Object> map2 = new HashMap<String,Object>();
+		map2.put("ID", 20003);
+		map2.put("NAME", ".,/;'\":");
+		map2.put("VALUE", "!@#$%^&*()_+-=~");
+		map2.put("CREATE_DATE", new Date().toLocaleString());
+		list.add(map2);
+	}
+	
+	public static void main(String[] args) {
+		
+		//初始化插入数据
+		initData();
+		
+		JDBCTest jdbc = new JDBCTest();
+		jdbc.DatabaseConnection();
+		Connection conn = jdbc.getConnection();
+		
+		//Sql
+		String sql = "INSERT INTO TEST1 (ID,NAME,VALUE,CREATE_DATE) VALUES (?,?,?,DATE_FORMAT(?,'%Y-%c-%d %h:%i:%s'))";
+		
+		try {
+			conn.setAutoCommit(false);
+			PreparedStatement ps = conn.prepareStatement(sql);
+			int count = 0;
+			for(int i=0;i<20003;i++){
+				ps.setInt(1, (Integer)list.get(i).get("ID"));
+				ps.setString(2, list.get(i).get("NAME").toString());
+				ps.setString(3, list.get(i).get("VALUE").toString());
+				ps.setString(4, list.get(i).get("CREATE_DATE").toString());
+				ps.addBatch();
+				//每5000条记录插入一次
+				if(i%5000==0&&i!=0){
+					ps.executeBatch();
+					conn.commit();
+					count++;
+					System.out.println("插入了："+count+"次");
+				}
+			}
+			
+			//最后不足5000条的数据插入
+			ps.executeBatch();
+			conn.commit();
+			count++;
+			System.out.println("总共插入了："+count+"次");
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}finally{
+			jdbc.close();
+		}
+
+	}
+	
+}
+
+8.Java调用存储过程：
+
+
+		JDBCTest jdbc = new JDBCTest();
+		jdbc.DatabaseConnection();
+		Connection conn = jdbc.getConnection();
+		try {
+			CallableStatement cs = conn.prepareCall("{CALL testPro()}");
+			ResultSet rs = cs.executeQuery();
+			while(rs.next()){
+				System.out.println(rs.getString("NAME_P"));
+				System.out.println(rs.getString("VALUE_Q"));
+			}
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+
+
+9.关于自连接的问题：把同一张表作为表连接的左右两部分，分别给不同的别名连接起来查询。
+
+注意：这里一般使用内连接比较好。
+
+如：
+
+select s.*,t.name as 'bossName' from self_tb s INNER join self_tb t on s.fid = t.id
+
+
+10.关于HttpUrlConnection如何使用：使用HttpClient来替代。
+
+比较复杂，请求时参考百度。
+
+发送数据：
+
+	        OutputStreamWriter writer = new OutputStreamWriter(conn.getOutputStream(),"UTF-8");  
+	        writer.write(array.toString()); 
+	        writer.flush(); 
+			
+服务端接收数据：
+
+			//读取请求数据
+			BufferedReader reader = request.getReader(); 
+            String data = reader.readLine();  
+            JSONArray array = JSONArray.fromObject(data);  
+            reader.close(); 
+
+参考：https://www.cnblogs.com/fangg/p/5886233.html			
+	
+11.将项目打包成安装文件：
+
+可以使用advanced installers 软件。
+
+12.XML解析有好几种，在不考虑性能的前提下优先使用dom4j：
+
+dom4j:
+
+package com.self.xml;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.util.Iterator;
+import java.util.List;
+
+import org.dom4j.Attribute;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.SAXReader;
+import org.dom4j.io.XMLWriter;
+
+/**
+ * 测试Dom4j操作xml
+ */
+public class Test {
+	
+	public static void main(String[] args) {
+		xmlDeal();
+	}
+	
+	public static void xmlDeal(){
+		SAXReader reader = new SAXReader();
+		try {
+			//获取xmL文档对象
+			Document doc = reader.read(new File("E:\\test.xml"));
+			
+			//获取根结点
+			Element root = doc.getRootElement();
+			
+			//遍历某个结点下所有的结点
+			Iterator it = root.elementIterator("SiChuan");//不加参数就是全部结点
+			while(it.hasNext()){
+				Element ele = (Element)it.next();
+				System.out.println(ele.getTextTrim());
+				
+				Iterator it2 = ele.elementIterator();
+				while(it2.hasNext()){
+					Element ele2 = (Element)it2.next();
+					System.out.println(ele2.getTextTrim());
+					
+					//获取结点的某个属性
+					List<Attribute> list = ele2.attributes();
+					for (Attribute attr : list) {
+						if("attr2".equals(attr.getName())&&"资阳市".equals(attr.getValue())){
+							Element eleAdd = ele2.addElement("Center");//添加结点名称
+							eleAdd.setText("市中区");//结点文本
+							eleAdd.addAttribute("name", "市中区");//添加结点的属性及内容
+							eleAdd.addAttribute("size", "1000m2");//添加结点的属性及内容
+						}
+					}
+					
+				}
+			}
+			
+			//将文档写入XML文件
+			
+			//设置文本格式
+			OutputFormat format = OutputFormat.createPrettyPrint();
+			
+			XMLWriter writer = new XMLWriter(new OutputStreamWriter(new FileOutputStream(new File("E:\\test.xml")),"UTF-8"),format);
+			writer.write(doc);
+			writer.flush();
+			writer.close();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+}
+
+13.Java操作注册表：(打成jar包之后可能会出现dll无法加载的情况，这时可以采用字符串拆分的方式处理)
+
+在工程根目录添加对应位数(32或64)的ICE_JNIRegistry.dll文件，添加registry.jar包。
+
+		try {
+			RegistryKey software = Registry.HKEY_LOCAL_MACHINE.openSubKey("SOFTWARE");
+			RegistryKey subKey = software.openSubKey("WOW6432Node\\HuiDu\\TiBIM");
+			String name = subKey.getStringValue("NAME");
+			String value = subKey.getStringValue("VALUE");
+			System.out.println(name);
+			System.out.println(value);
+			subKey.closeKey();
+		} catch (NoSuchKeyException e) {
+			e.printStackTrace();
+		} catch (RegistryException e) {
+			e.printStackTrace();
+		}
+
+		
+14.精确定位Xml文件结点：XPath.(使用的前提是文件必须是标准格式的XMl文件)
+
+添加jar包：jaxen-1.1-beta-6.jar.
+
+XPath语法：略。
+
+例：
+
+		SAXReader reader = new SAXReader();
+		Document doc = null;
+		try {
+			doc = reader.read(new File(rootPath + "TiBIM\\webapps\\web\\develop\\working\\XiConfig_TiEAM_AF_oracle.xml"));
+			String xPath = "//MatrixFlowAttr";
+			List<?> list = doc.selectNodes(xPath);
+			System.out.println(list.size());
+			
+		} catch (DocumentException e) {
+			e.printStackTrace();
+		}
+
+		
+15.Eclipse插件安装：
+
+代码覆盖率：Coverage
+打包：FatJar
+
+16.对类型进行转换时，不要直接强制转换，比较好的做法是先用instanceof判断一下类型。
+
+17.Java中时间格式处理：SimpleDateFormat.
+
+18.写if...else if...else if 时，如果明确只有几个判断值把最后一个判断值写到else中不显得累赘。
+
+19.用POI对Excel进行处理，可以分为对xls的HSSF处理和对xlsx的XSSF处理。
+
+POI jar包：poi-3.7.jar、poi-examples-3.7.jar、poi-ooxml-3.7.jar、poi-ooxml-schemas-3.7.jar、poi-scratchpad-3.7.jar、xmlbeans-2.6.0.jar。
+
+代码见excel文件夹文件。
+
+
+20.拆分字符串除了split的方式，还可以使用下面的方式来处理：list中存拆分出来的每一部分结果。
+
+(1)StringTokenizer：
+
+		List<String> list = new ArrayList<String>();
+		StringTokenizer token = new StringTokenizer(fileName, ".");
+		while(token.hasMoreTokens()){
+			list.add(token.nextToken().toString());
+		}
+
+(2)split：
+
+	public static List<String> function1(String str){
+		if(str != null && !"".equals(str)){
+			String[] arr = str.split(",");
+			List<String> arrayList = Arrays.asList(arr);
+			return arrayList;
+		}else{
+			return new ArrayList<String>();
+		}
+	}
+	
+注：第一种效率比较高，但是存在兼容性问题。第二种效率较低，但没有兼容问题。优先选择第二种，可以把返回的数组转换成list再操作，避免空指针。		
+
+21.使用Jquery+Ajax从后台请求json格式的数据：
+
+使用到的jar包：commons-beanutils-1.8.0.jar、commons-collections-3.2.jar、commons-lang-2.5.jar、commons-logging.jar、ezmorph-1.0.6.jar、json-lib-2.4-jdk15.jar、servlet-api.jar。
+
+js:
+
+        $.ajax({
+            type: "get",
+            url: "/DyTest/ServletAjax",
+            dataType:'json',
+            data: {'name':'zp','pwd':'333'},
+            success: function(data){
+				$.each(data,function(key,value){
+					console.log("key:"+value.name+",value:"+value.pwd);
+					console.log("------");
+				})
+            },
+            error:function(){
+            	alert('error!!!');
+            }
+        });
+		
+这里需要注意的是：
+
+(1)声明dataType时一定要保证返回的数据是json格式而不是text格式的,如果不是那么就去掉这一行。
+(2)url这里的写法是："/项目名" + "web.xml中的url-pattern"。
+
+java：
+
+		//传入参数
+		String name = req.getParameter("name");
+		String pwd = req.getParameter("pwd");
+		
+		//组装数据
+		JSONArray array = new JSONArray();
+		JSONObject obj = new JSONObject();
+		obj.put("name", name);
+		obj.put("pwd", pwd);
+		JSONObject obj2 = new JSONObject();
+		obj2.put("name", name+"2");
+		obj2.put("pwd", pwd+"2");
+		array.add(obj);
+		array.add(obj2);
+		
+		String result = array.toString();
+	
+		//返回前端
+		resp.setHeader("Content-type", "text/html;charset=UTF-8");
+		OutputStream stream = resp.getOutputStream();
+		stream.write(result.getBytes("UTF-8"));
+		
+		
+这里要注意的是：使用到的jar包和关联的包可能会存在版本冲突。返回前端数据也可以使用resp.getWriter()的方式。
+
+
+小技巧：
+
+(1)可以通过直接url访问浏览器的方式查看后端业务序列返回的数据值。
+	
+如：
+
+url:http://localhost:8080/DyTest/ServletAjax?name=zp1&pwd=333
+网页数据：[{"name":"zp1","pwd":"333"},{"name":"zp12","pwd":"3332"}]
+
+(2)在写ajax请求时，可以单独把项目名作为全局变量提取出来，如：
+
+	//项目名
+	var projName = '';
+	。。。。
+	projName = '${pageContext.request.contextPath}';
+	。。。。
+	url : projName + "/ServletAjax",
+	
+注：如果使用写basepath的方式，可能会对第三方包的引用路径产生影响，个人觉得这种方式更好。
+
+(3)ajax异步请求只是局部数据刷新，不能实现请求转发或重定向的功能，使用表单代替。
+
+
+22.对JSONArray进行排序：
+
+注意：因为这里使用了匿名内部类，所以对于外部参数要声明成属性才可以在内部进行使用。
+
+public class Tool {
+	
+	//比较属性字符串
+	private static String CompareName = "";
+	
+	/**
+	 * 对JSONArray从小到大排序
+	 * @param array
+	 * @return
+	 */
+	public static JSONArray sortJSONArray(JSONArray array,String name){
+		
+		//初始化比较属性字符串
+		CompareName = name;
+		
+		//转换成list格式
+		List<JSONObject> list = new ArrayList<JSONObject>();
+		for(int i=0;i<array.size();i++){
+			Object obj = array.get(i);
+			if(obj instanceof JSONObject){
+				list.add((JSONObject)obj);
+			}
+		}
+		
+		//排序
+		Collections.sort(list,new Comparator<JSONObject>(){
+			public int compare(JSONObject o1, JSONObject o2) {
+				int os1 = Integer.parseInt(o1.get(CompareName).toString());
+				int os2 = Integer.parseInt(o2.get(CompareName).toString());				
+				if(os1<=os2){
+					return -1;
+				}else{
+					return 1;
+				}
+			}
+		});
+		
+		array.clear();
+		for(int i=0;i<list.size();i++){
+			array.add(list.get(i));
+		}
+		
+		return array;
+	}
+}
+
+23.利用Echarts实现前端数据表图：
+
+注意：这里使用的是异步获取数据，所以异步数据相关的操作都要放到ajax中的success分支中。
+
+以柱状图为例，Echarts还可以实现非常多的数据图表，如：折线图、雷达图、地图等等。
+
+   /**
+	* 显示第一张柱状图
+	*/
+	function showGraph1(){  
+		$.ajax({
+			type : "get",
+			url : "/DyTest/ServletAjax",
+			dataType : 'json',
+			data : {"graphIndex":"one"},
+			success : function(data) {
+				var dataX = [];
+				var dataY = [];
+				$.each(data, function(key, value) {
+					dataX.push(value.level);
+					dataY.push(value.number);
+				})
+				
+		        var myChart = echarts.init(document.getElementById('graph1'));
+
+		      	//加载图表数据
+		        var option = {
+		            title: {
+		                text: '重邮学生人数柱状图'
+		            },
+		            tooltip: {},
+		            legend: {
+		                data:['学生人数']
+		            },
+		            xAxis: {
+		                data: dataX
+		            },
+		            yAxis: {},
+		            series: [{
+		                name: '学生人数',
+		                type: 'bar',
+		                data: dataY
+		            }]
+		        };
+		        myChart.setOption(option);
+			},
+			error : function() {
+				alert('error!!!');
+			}
+		});
+	}
+	
+24.使用sql获取某一单一类型数据时，可以采用distinct或者group by来查询。
+
+25.使用sql判断在另一张表中是否有关联的数据时可以采用NOT IN (子查询的方式)，而不要使用表连接的方式。
+
+26.空值的判定最好写成一个独立的内部方法，包括 null、""、"null"，对于第三种需要使用lowercase忽略大小写来判定。
+
+27.判断字段组合的字符串是否相等可以使用这种更好的方式：
+
+INSTR( LOWER( T.BIM_SUPERVISOR ), LOWER(( U.EAF_NAME||'(' ||U.EAF_LOGINNAME ||')'  ) )) >0
+
+注：|| 相当于 + 。
+
+28.利用SMS短信平台发送短信：
+
+jar包：
+
+commons-codec-1.4
+commons-httpclient-3.1
+commons-logging-1.1.1
+
+代码：
+
+
+		/**
+		 * 这是一个通过SMS短信平台发送短信的例子
+		 * 使用前提
+		 * (1)去SMS的网站上注册一个账号
+		 * (2)获取短信接口秘钥
+		 * (3)设置短信签名格式
+		 * (4)确认短信内容符合规则
+		 */
+		HttpClient client = new HttpClient();
+		//SMS短信平台请求地址(gbk)
+		PostMethod post = new PostMethod("http://gbk.sms.webchinese.cn");
+		//在头文件中设置转码(gbk)
+		post.addRequestHeader("Content-Type","application/x-www-form-urlencoded;charset=gbk");
+		//配置参数
+		NameValuePair[] data = { 
+				new NameValuePair("Uid", "zpzphero"), //注册用户名
+				new NameValuePair("Key", "68d1e771df1547a5c8e8"),//短信接口秘钥
+				new NameValuePair("smsMob", "13667623716"), //目标电话号码
+				new NameValuePair("smsText", "这是一条来自Zp的测试短信，请无视") }; //短信内容
+		post.setRequestBody(data);
+		client.executeMethod(post);  
+	    Header[] headers = post.getResponseHeaders();  
+	    int statusCode = post.getStatusCode();  
+	    System.out.println("statusCode:" + statusCode);  
+	    for (Header h : headers) {  
+	        System.out.println(h.toString());  
+	    }  
+	    String result = new String(post.getResponseBodyAsString().getBytes("gbk"));  
+	    System.out.println(result);  
+	    post.releaseConnection();
+		
+		
+注：发送短信始终是要花钱的，这里利用的是免费短信条数。
+
+另：通过打印到控制台的返回码可以在SMS官网上找到相应的错误信息。如果返回1，那么就表示短信发送成功了。
+
+29.打印：
+
+比较麻烦，可以考虑使用lodop。
+
+30.枚举：
+
+(1)代替常量的使用。
+
+31.IO:
+
+在进行IO操作时，如果怎么都会出现乱码问题，应该试试能否使用字符流来代替字节流。
+
+32.无法调试的环境的问题定位方法：
+
+打日志，从上层方法开始向下层方法渗透，逐步定位，缩小范围。注意打印关键数据，如：参数、url等等。
+
+33.Java生成二维码并保存成图片：
+
+引入jar包：zxing-core-2.0.jar
+
+生成二维码：
+
+		//二维码内容
+        String text = sText;
+        
+        //二维码图片宽度
+        int width = Integer.parseInt(sWidth);
+        
+        //二维码图片高度
+        int height = Integer.parseInt(sHeight);
+        
+        //二维码的图片格式
+        String format = "jpg";
+
+        Hashtable<EncodeHintType, String> hints = new Hashtable<EncodeHintType, String>();
+        
+        //内容所使用字符集编码
+        hints.put(EncodeHintType.CHARACTER_SET, "utf-8");
+
+        BitMatrix bitMatrix = new MultiFormatWriter().encode(text,BarcodeFormat.QR_CODE, width, height, hints);
+        
+        //生成二维码
+        String root = System.getProperty("user.dir");
+        String fileName = "qrcode";//文件名
+        String suffix = "jpg";//文件后缀
+        String path = root + "\\webapps\\web\\XiTempFilePath\\XiUploadFile\\userimage\\";
+        
+        //判断目录是否存在,如果不存在那么就创建目录
+        File file = new File(path);
+        if(!file.exists()){
+        	file.mkdirs();
+        }else{
+        	if(!file.isDirectory()){
+        		file.mkdirs();
+        	}
+        }
+        path += fileName+"."+suffix;//保存路径
+        
+        File outputFile = new File(path);
+        ImageConverter.writeToFile(bitMatrix, format, outputFile);
+		
+写入文件生成图片：
+
+	/**
+	 * 黑色颜色值
+	 */
+	private static final int BLACK = 0xFF000000;
+	
+	/**
+	 * 白色颜色值
+	 */
+	private static final int WHITE = 0xFFFFFFFF;
+
+	/**
+	 * 转换成图片
+	 * @param matrix matrix
+	 * @return 图片流
+	 */
+	public static BufferedImage toBufferedImage(BitMatrix matrix) {
+		int width = matrix.getWidth();
+		int height = matrix.getHeight();
+		BufferedImage image = new BufferedImage(width, height,BufferedImage.TYPE_INT_RGB);
+		for (int x = 0; x < width; x++) {
+			for (int y = 0; y < height; y++) {
+				image.setRGB(x, y, matrix.get(x, y) ? BLACK : WHITE);
+			}
+		}
+		return image;
+	}
+
+	/**
+	 * 写入文件
+	 * @param matrix matrix
+	 * @param format 格式
+	 * @param file 文件
+	 * @throws IOException IO异常
+	 */
+	public static void writeToFile(BitMatrix matrix, String format, File file)throws IOException {
+		BufferedImage image = toBufferedImage(matrix);
+		if (!ImageIO.write(image, format, file)) {
+			throw new IOException("Could not write an image of format "
+					+ format + " to " + file);
+		}
+	}
+
+34.oracle处理：
+
+(1) wmsys.wm_concat():
+
+将某一列的多行拼接起来以逗号分割。
+
+如：SELECT wmsys.wm_concat(NAME) FROM TABLE;
+
+(2) 对于一对多的表连接产生的重复数据可以用GROUP BY 目标字段 和 MAX(其他字段) 来处理。（不要用这种方法，使用开窗函数处理）
+
+如：
+SELECT ID,MAX(EAF_NAME) FROM TABLE GROUP BY ID ORDER BY ID ASC
+
+35.一个比较好的list去重写法：
+
+		Set<Map<String, Object>> newSet = new HashSet<Map<String, Object>>();
+		List<Map<String, Object>> newList = new ArrayList<Map<String, Object>>();
+		for (Map<String, Object> m : list) {
+			if (newSet.add(m)) {
+				newList.add(m);
+			}
+		}
+		
+36.Ajax同步问题：
+
+在参数处声明：async:false,
+
+异步请求按照程序顺序请求执行，多个异步请求不同步执行。
+
+37.oracle：
+
+ROW_NUMBER() OVER 用法：
+
+(1)ROW_NUMBER() OVER(ORDER BY '列1' ASC)
+
+表示在按照'列1'排序之后按照顺序返回一个排序值。
+
+(2)ROW_NUMBER() OVER(PARTITION BY '列1' ORDER BY '列2' ASC)
+
+表示先按照'列1'分组，再在分组后的每一组中按照'列2'排序，返回这样一个排序值。
+
+注：
+
+PARTITION BY 有点类似于HAVING。
+
+(3)DECODE：
+
+例如：
+SELECT DECODE(SIGN(P.BIM_SHP-2),1,P.EAF_NAME || '分支1',-1,P.EAF_NAME || '分支2',P.EAF_NAME || '其他分支') AS FLAG FROM BIM_QUALITY_PROBLEM P
+
+(4)CONCAT：
+
+例如：
+CONCAT(C1,C2)
+
+将C2连接到C1后，如果其中一个为NULL则返回另一个，两个都为NULL则返回NULL。
+
+(5)LENGTH()：字符串长度，TRIM()：去除左右空格，UPPER()、LOWER()：大小写。
+
+(6)SIGN(n)：如果n为负数则返回-1，如果n为正数则返回1，如果n为0则返回0。
+
+(7)TRUNC(m,n):按照指定的精度获取值。n为正数，往小数点后移动，n为负数，往小数点前移动。
+
+例如：
+TRUNC(124.166666,-2)、TRUNC(124.166666,2)。
+
+TRUNC可以用于截取时间，如： SELECT TRUNC(SYSDATE,'dd') AS SDATE FROM DUAL   2018-09-30
+
+(8)TO_CHAR()、TO_DATE()、TO_NUMBER()。
+
+(9)UID:用于标识当前数据库用户的整数。
+
+相当于内置一个三目运算语句，使SQL更加简洁。
+
+38.数据集分组写法：
+
+			Map<String,List<String>> mapGroup = new HashMap<String,List<String>>();
+			for(int i=0;i<list.size();i++){
+				Map<String,Object> mapLink = list.get(i);
+				String nId = mapLink.get("navId").toString();
+				String tId = mapLink.get("itemId").toString();
+				List<String> listGroup = mapGroup.get(nId);
+				if(listGroup == null){
+					listGroup = new ArrayList<String>();
+					listGroup.add(tId);
+				}else{
+					listGroup.add(tId);
+				}
+				mapGroup.put(nId, listGroup);
+			}
+
+39.在前端JS中，IE下，new Date()不能接收"-"的字符，应该使用str.replace(/-/g,"/")替换为"/"。谷歌浏览器下没有这个问题。
+
+40.js中数组(集合)通过索引删除元素：arr.splice(i,1);
+
+41.在使用谷歌浏览器调试前端时：
+
+(1)可以打断点到变量有效处，直接在控制台输入变量以查看变量内容。
+
+(2)可以在控制台右侧的样式框中，勾选或取消样式直接查看页面变化。
+
+42.js加载某些组件时，需要考虑顺序的问题，把<script></script>标签放到body后。
+
+43.解决Conllection实现类fail-fast问题，使用迭代器Iterator进行增、删。
+
+注意使用下面这种格式，避免指针移位：
+
+for(Iterator it = list.iterator();it.hasNext();){
+	it.remove();
+}
+
+44.手工的分页写法：
+
+通常会在sql中利用排序后的rownum来控制查询数据的指针，数据指针位置的算法：
+
+page:查询第几页。
+size:每一页有多少条数据。
+
+索引值从0开始：
+startIndex(开始索引值):size * (page - 1)
+endIndex(结束索引值):size * page -1
+
+45.前端页面小记：
+
+(1)打开子窗体：
+
+var sHtml = '<iframe src="" style="" frameborder="0" scrolling="no"></iframe>';
+$("#divId").html(sHtml);
+
+(2)浮动效果：
+
+style="float:left;"
+style="position:absolute;z-index:99;"
+
+(3)透明效果：
+
+style="opacity:0.8;"
+
+(4)边框设置：
+
+style="border:1px solid red"  -- 边框宽度、实线、边框颜色
+
+(5)图片按钮：
+
+搜索"图标"，添加<img src="" onClick="">标签。
+
+(6)设置div扩展：
+
+style="overflow:auto;max-height:150px;"
+
+(7)屏幕宽、高：
+
+parent.window.innerWidth
+parent.window.innerHeight
+
+(8)取父页面的元素对象：
+
+parent.$("#divId")
+
+(9)伪类：
+
+<a href='javascript:void(0)' onClick="" title="" style=""></a>
+
+46.缺jar包，找jar包的方式：
+
+eclipse点开错误引用，会在打开的页面中显示jar包路径，根据路径查看目录下是否有该jar包。
+
+47.POST请求：
+
+在使用POST请求时，如果参数中可能包含中文，一定要用encodeURIComponent编码一次，不然会有兼容性问题。
+如果不使用编码，就用Ajax发get请求，将参数写在ajax的data中。
+
+48.时间格式的兼容性问题：
+
+IE下不支持"2000-12-12"的时间格式，应该替换为"2000/12/12"。
+
+49.ORACLE   WITH AS用法：
+
+with as 相当于建了一个临时表，只会解析一次，如果在sql语句中多次使用到，那么就可以提升sql语句的执行效率。也可以使sql语句变得简洁、易读。
+
+例如：
+
+WITH T1 AS
+(
+SELECT T.EAF_ID,T.EAF_STATE,T.EAF_OID,T.EAF_CREATOR,T.EAF_NAME,T.BIM_PROJ FROM (
+SELECT D.*,ROWNUM AS CNUM FROM 
+(SELECT * FROM BIM_DOC_DOC_R ORDER BY EAF_CREATETIME ASC) D
+) T WHERE T.CNUM <= 20 
+),
+T2 AS
+(
+SELECT K.EAF_ID,K.EAF_STATE,K.EAF_OID,K.EAF_CREATOR,K.EAF_NAME,K.BIM_PROJ FROM 
+(SELECT T.*,T.CNUM AS NNUM FROM (
+SELECT D.*,ROWNUM AS CNUM FROM 
+(SELECT * FROM BIM_DOC_DOC_R ORDER BY EAF_CREATETIME ASC) D
+) T WHERE T.CNUM >= 40) K WHERE K.NNUM <= 69
+)
+SELECT * FROM T1
+UNION ALL
+SELECT * FROM T2
+
+注：对于UNION ALL特别有用。
+
+50.异常处理语句中不要写e.printStackTrace()来打印堆栈信息，会被扫为漏洞，用日志记录代替。
+
+51.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

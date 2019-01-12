@@ -1,0 +1,394 @@
+一、Spring的核心：
+
+依赖注入DI和面向切面编程AOP。
+
+1.DI：依赖注入。
+
+通过DI，对象之间的依赖关系由第三方组件在创建对象的时候进行设定，对象无需自行管理。
+
+装配：创建应用组件之间协作的行为。XML方式等。
+
+Spring通过应用上下文装载bean的定义并把它们组装起来。Spring上下文负责对象的创建和组装。
+
+2.AOP：面向切面。
+
+允许把遍布应用各处的功能分离出来形成可重用的组件。
+
+使服务模块化并以声明的方式将它们应用到它们需要影响的组件中去。
+
+3.使用jdbcTemplete来简化数据层查询代码。
+
+4.Spring容器：
+
+Spring自带了多种类型的应用程序上下文。
+
+bean的生命周期：
+
+(1)Spring对bean进行实例化。
+(2)Spring将值和bean的引用注入到bean对应的属性中。
+(3)如果bean实现了BeanNameAware接口，Spring将bean的ID传递给setBean-Name()方法。
+(4)如果bean实现了BeanFactoryAware接口，Spring将调用setBeanFactory()方法，将BeanFactory容器实例传入。
+(5)如果bean实现了ApplicationContextAware接口，Spring将调用setApplicationContext()方法将bean所在的应用上下文的引用传入进来。
+(6)如果实现了BeanPostProcessor接口，Spring将调用post-ProcessBeforeInitialization()方法。
+(7)如果实现了InitializingBean接口，Spring将调用after-PropertiesSet()方法。同样，如果使用init-method声明了初始化方法，该方法也会被调用。
+(8)如果实现了BeanPostProcessor接口，Spring将调用post-ProcessAfterInitialization()方法。
+(9)此时，bean已经准备好了，一直停留在应用上下文中，直到被上下文销毁。
+(10)bean如果实现了DisposableBean接口，Spring将调用destory()方法。同样，如果bean使用destory-method声明了销毁方法，该方法也会被调用。
+
+5.Spring组织：
+
+Spring模块：
+
+Spring核心容器：管理bean的创建、配置和管理功能。配置时，隐式地使用了容器。
+AOP：对面向切面编程提供了丰富的支持。
+数据访问与集成：使用JDBC和DAO抽象样板式代码，也提供了ORM框架的支持。
+web与远程调用：MVC框架。
+instrumentation：提供了为JVM添加代理的功能。基本不用。
+测试：提供测试功能。
+
+Spring Portfolio：
+
+Spring Web Flow：支持基于流程的会话式web应用。
+Spring Web Service：不好，基本不用。
+Spring Security：安全。
+Spring Integration：提供多种应用集成模式的Spring声明式风格实现。
+Spring Batch：数据批处理。
+Spring Data：提供数据持久化支持。
+Spring Social：社交网络扩展。
+Spring Mobile：移动平台。
+Spring for Android：安卓。
+Spring Boot：简化配置。
+
+6.装配Bean：
+
+(1)XML配置：这种方式也比较老了，不推荐。
+
+(2)Java配置：使用JavaConfig来配置，放入独立的包中。
+
+在配置类上添加@Configuration注解，说明这个类是配置类，在配置类中添加方法返回bean，并用@Bean注解修饰方法。
+
+@Configuration
+public Class JavaConfig{
+    @Bean
+	public T1 getT1(T2 t){
+		return new T1(t);
+	}
+}
+
+这里实际每次都会注入同一个对象，而不是通过new的方式。
+
+(3)隐式的bean发现和自动装配机制：尽量使用这种方式。
+
+Spring从两个角度来实现自动化装配：
+
+组件扫描：Spring会自动发现应用上下文中创建的bean。
+自动装配：Spring会自动满足bean之间的依赖。
+
+在类上使用注解@Component注解，表明这个类是组件类，要为这个类创建bean。
+组件扫描默认不启用，使用@ComponentScan来启用组件扫描，默认扫描与启用类同包的类。或者使用XML启用，在上下文中添加描述：<context:component-scan base-package="" />。
+在属性上使用@Autowired来自动装配bean。还可以用到方法上，注入参数bean。@Autowired时Spring特有注解，可以替换为@Inject。
+
+为bean给定一个ID，默认为类名首字母小写，使用@Component('名字')来替换默认的名字。或者用注解@Name('名字')
+
+@ComponentScan('')、@ComponentScan(basePackages="")或@ComponentScan(basePackages={""，""})来自定义设置扫描的包。
+
+可以在Java和XML中相互引用另一方的配置。
+
+7.高级装配：
+
+暂略，后面补。
+
+8.面向切面的Spring：
+
+通知(Advice)：定义了切面什么时候被引用。分为：前置通知(Before,目标方法调用前调用通知)、后置通知(After,目标方法完成后通知)、返回通知(After-Returning,目标方法成功执行后通知)、异常通知(After-throwing,目标方法跑出异常之后通知)、环绕通知(Around,通知包裹了被通知的方法，在被通知的方法调用之前和之后执行自定义行为)。
+连接点(Join point)：应用执行过程中可以插入切面的一个点。
+切点(Poincut)：切点有助于缩小切面所通知的连接点的范围。
+切面(Aspect)：是通知和切点的结合。是什么，在什么地方和什么时候完成什么事情。
+引入(Introduction)：允许我们向现有的类添加新方法或属性。
+织入(Weaving)：把切面应用到目标对象并创建新的代理对象的过程。在对象的生命周期里多个点可以织入：编译期(AspectJ用这种方式)、类加载期()、运行期(Spring AOP用这种方式)。
+
+注：
+
+Spring AOP基于代理
+Spring通知是Java编写的
+Spring在运行时通知对象
+Spring只支持方法级别的连接点，其他的用Aspect来补充
+
+Spring借助AspectJ的切点表达式来定义Spring切面：
+
+execution()：用于匹配是连接点的执行方法。
+arg()：限制连接点匹配参数为指定类型的执行方法。
+@args()：限制连接点匹配参数由指定注解标注的执行方法。
+this()：限制连接点匹配AOP代理的bean引用为指定类型的类。
+target：限制连接点匹配目标对象为指定类型的类。
+@target()：限制连接点匹配特定的执行对象，这些对象对应的类要具有指定类型的注解。
+within()：限制链接点匹配指定的类型。
+@within()：限制连接点匹配指定注解所标注的类型。
+@annotation：限定匹配带有指定注解的连接点。
+
+编写切点：
+
+execution(返回类型 类路径.方法名(参数)) && within(包名.*)
+
+execution(* com.self.spt.test.Test1.test(..)) && within(com.self.spt.test.*)：在com.self.spt.test包下的Test1类中test方法执行时执行，限制条件为：返回任意类型、参数为任意类型。&&(and)、||(or)、!(not)。
+
+bean('bean的名字')：限定bean的ID为指定的ID。
+
+定义切面：@Aspect声明类不仅是POJO，还是一个切面。在JavaConfig中使用@EnableAspectJAutoProxy来启用AspectJ自动代理。
+
+在写切面前需要在总配置文件xml中，添加命名空间和xsi：
+
+xmlns:aop="http://www.springframework.org/schema/aop
+xsi:schemaLocation="
+  http://www.springframework.org/schema/aop
+  http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+  
+设置为自动代理：<aop:aspectj-autoproxy />
+
+@Aspect
+@Service
+public class T{
+	@Before("execution(返回类型 类路径.方法名(参数)) && within(包名.*)")
+	public void before(){
+
+	}
+}
+
+@Before、@After、@After-Returning、@After-throwing、@Around：对应五种通知类型。
+
+模块化切面：
+
+@Poincut("execution(返回类型 类路径.方法名(参数)) && within(包名.*)")
+public void t1(){}
+
+@Before("t1()")
+public void test(){
+
+}
+
+@Around相当于同时@Before、@After。
+
+可以给切面方法传入参数，在@Before注解和execution中的参数类型追加声明就行了。
+
+当Spring中的切面功能无法满足需求时，使用AspectJ来作为补充。
+
+AspectJ：
+
+暂略，后面补。
+
+
+
+二、Web中的Spring：
+
+1.SpringMvc：
+
+SpringMvc的请求过程：
+
+(1)请求携带用户的请求信息离开浏览器之后到达前端分发器DispatcherServlet。
+(2)分发器根据请求的url信息，确定分发给哪一个控制器。
+(3)到了控制器，请求会释放用户提交的信息，并等待其处理。
+(4)控制器处理完后，通常会返回一些信息，这些信息成为模型。模型会被转换为用户友好的方式进行格式化，所以信息需要发送一个视图。
+(5)控制器最后完成的一件事情就是将模型数据打包，并且标识出用于渲染输出的视图名，然后将请求连同模型和视图名发送回DispatcherServlet分发器。
+(6)视图名并不直接表示某个特定的JSP，DispatcherServlet已经知道了用那个视图渲染结果，然后交付模型数据，视图将使用模型数据渲染输出，这个输出会通过响应对象传递给客户端。
+
+JavaConfig搭建SpringMvc：这里没有调通，以后再看。
+
+(1)配置DispatcherServlet：需要servlet-api.jar包。
+
+
+(2)启动SpringMvc：
+
+
+(3)编写控制器：
+
+
+(4)测试控制器：
+
+XML搭建SpringMvc：
+
+web.xml：
+
+  <!-- 引入全局配置文件 -->
+  <context-param>
+  	<param-name>contextConfigLocation</param-name>
+  	<param-value>/config/applicationContext.xml</param-value>
+  </context-param>
+  
+  <!-- 注册ContextLoader-Listener -->
+  <listener>
+  	<listener-class>
+  		org.springframework.web.context.ContextLoaderListener
+  	</listener-class>
+  </listener>
+  
+  <!-- 注册DispatcherServlet,引入SpringMvc配置文件 -->
+  <servlet>
+  	<servlet-name>appServlet</servlet-name>
+  	<servlet-class>
+  		org.springframework.web.servlet.DispatcherServlet
+  	</servlet-class>
+  	<init-param>
+  		<param-name>contextConfigLocation</param-name>
+  		<param-value>
+  			/config/dispatcher-servlet.xml
+  		</param-value>
+  	</init-param>
+  	<load-on-startup>1</load-on-startup>
+  </servlet>
+  
+  <!-- 将DispatcherServlet映射到"/" -->
+  <servlet-mapping>
+  	<servlet-name>appServlet</servlet-name>
+  	<url-pattern>/</url-pattern>
+  </servlet-mapping>
+  
+applicationContext.xml：全局配置。
+
+<?xml version="1.0" encoding="UTF-8"?>
+    
+<beans xmlns="http://www.springframework.org/schema/beans"    
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"    
+    xmlns:context="http://www.springframework.org/schema/context"    
+    xmlns:mvc="http://www.springframework.org/schema/mvc"    
+    xsi:schemaLocation="http://www.springframework.org/schema/beans      
+                        http://www.springframework.org/schema/beans/spring-beans-4.1.xsd      
+                        http://www.springframework.org/schema/context      
+                        http://www.springframework.org/schema/context/spring-context-4.1.xsd      
+                        http://www.springframework.org/schema/mvc      
+                        http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd">
+         
+    <!-- 添加注解驱动 -->      
+    <mvc:annotation-driven />    
+    <mvc:default-servlet-handler/>    
+        
+    <!-- 设置使用注解的类所在的包 -->    
+    <context:component-scan base-package="com.self.spt.controller" />             
+                                        
+</beans>
+
+dispatcher-servlet.xml：SpringMvc配置。
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+        
+        
+</beans>
+
+controller：
+
+@Controller
+@RequestMapping("/test")
+public class TestController {
+	
+	@ResponseBody
+	@RequestMapping(value="/test1")
+	public String test1() {
+		Map<String,String> map = new HashMap<>();
+		map.put("11", "1-1");
+		return map.toString();
+	}
+	
+}
+
+js：
+
+var basePath = "/SpringTest";
+
+请求url：basePath + "/test/test1"
+
+
+接受请求的参数：
+
+查询参数：@RequestParam(value="id") String id
+
+表单参数：处理数据比较复杂。
+
+路径参数：处理类似url的请求，@PathVariable('id') String id
+
+校验表单：相关注解不好用，使用校验框架来代替。
+
+2.使用前端模板渲染动态页面：模型视图的方式没有调通，先略。
+
+3.使用SpringMvc创建REST API：
+
+REST是什么：
+
+面向资源，将资源的状态以最适合客户端或者服务器的形式从服务端转移到客户端。（或者反过来）
+
+Spring提供两种将资源的Java表述形式转化为发送给客户端的表述形式：1.内容协商，选择视图，将模型渲染给客户端。2.消息转换器，将控制器所返回的对象转换返回给客户端。
+
+@ResponseBody注解会告知Spring，我们要将返回的对象作为资源发送给客户端，并将其转换为客户端可接受的表述形式。
+@RequestBody也能告诉Spring查找一个消息转换器，将来自客户端的资源表述转换为对象。
+如果在控制器类上使用@RestController来代替@Controller的话，Spring将会为该控制器的所有处理方法应用消息转换功能。
+
+Spring提供了多种方式来处理异常的场景：
+
+	使用@ResponseStatus注解可以指定状态码。ResponseEntity、HttpStatus。
+	
+	控制器方法可以返回ResponseEntity对象，该对象能够包含更多响应相关的元数据。
+	
+	异常处理器能够应对错误场景，这样处理器方法就能关注于正常的状况。
+	
+RestTemplate定义了36个与REST资源交互的方法，略。
+
+4.SpringMvc高级技术：
+
+
+
+三、后端中的Spring：
+
+1.在Spring中使用JdbcTemplate消除模板化代码。
+
+2.持久化Hibernate。
+
+3.处理NoSql。
+
+
+
+四、其他：
+
+1.日志：参考项目。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

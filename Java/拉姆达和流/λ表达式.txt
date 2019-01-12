@@ -1,0 +1,157 @@
+1.定义：
+
+λ表达式就是实现SAM接口的语法糖。用于简化代码。
+
+2.语法：
+
+(1)完整形式：
+
+(T1 x,T2 y,...,TN n) -> {
+	语句1;
+	语句2;
+	return 返回值;
+}
+
+(2)只有一个参数时可以简化为：
+
+parameter1 -> {
+	...
+}
+
+(3)表达式中只有一条语句时可以省略大括号、return和分号。
+
+3.拉姆达表达式可用变量：
+
+传递变量、内部自定义变量、外部变量。
+
+这里需要注意：外部变量必须是引用不可变的，在拉姆达表达式中会被作为final来处理。
+
+4.拉姆达表达式中的this：
+
+指向的是声明它的外部对象。如：com.self.test.whatThis。
+
+5.方法引用：
+
+对象名::实例方法名
+
+类名::静态方法名
+
+类名::实例方法名
+
+前两种相当于方法的调用(等价于x->System.out.println(x))，最后一种等于把第一个参数当成instanceMethod的目标对象，其他剩余参数当成该方法的参数。如：String::toLowerCase等同于x->x.toLowerCase()。
+
+构造器引用：
+
+类名::new，Object::new等价于x->new Object(x)。
+
+6.stream：元素的集合，类似于iterator。支持串行和并行地对原Stream进行汇聚操作。
+
+用函数式的声明代替实现。
+
+包括三个基本部分：
+
+创建stream
+
+转换stream，每次转换原有stream不变返回一个新的stream对象
+
+对stream进行聚合操作，获取想要的结果
+
+(1)获取stream：
+
+通过stream静态工厂方法：
+
+of方法：两个重载方法，一个接受边长参数，一个接受单一值。
+
+generator方法：生成一个无限长度的stream，其元素的生成通过给定的Supplier，一般配合limit()方法来使用。如：Stream.generate(() -> Math.random());
+
+iterate方法：生成无限长度的stream，元素的生成是通过重复对给定的种子值调用指定的函数来生成的。如：Stream.iterate(1, item -> item + 1).limit(10).forEach(System.out::println);
+
+通过collection接口默认方法：
+
+如：list.stream()
+
+(2)转换stream：
+
+distinct：对stream中的元素去重，依赖equals方法。
+
+filter：对stream中包含的元素使用给定的过滤函数进行过滤。
+
+map：对stream中的元素使用给定的转换函数进行转换操作，新生成的stream只包含转换后的元素。包含三个原始类型的方法：mapToInt、mapToLong、mapToDouble。(省去装箱拆箱)
+
+flatMap：与map类似，不同的是其每个元素转换得到的是Stream对象，会把子Stream中的元素压缩到父集合中。
+
+peek：生成一个包含原Stream的所有元素的新Stream，同时会提供一个消费函数（Consumer实例），新Stream每个元素被消费的时候都会执行给定的消费函数。(相当于创建一个副本然后调用某个函数，但不改变自身)
+
+limit：对一个Stream进行截断操作，获取其前N个元素，如果原Stream中包含的元素个数小于N，那就获取其所有的元素。如：.limit(10)
+
+skip：返回一个丢弃原Stream的前N个元素后剩下元素组成的新Stream，如果原Stream中包含的元素个数小于N，那么返回空Stream。如：.skip(4)
+
+(3)汇聚：接受一个元素序列为输入，反复使用某个合并操作，把序列中的元素合并成一个汇总的结果。
+
+通用的汇聚操作，如：reduce()和collect()
+
+特定的汇聚操作，如：sum(),max()和count()
+
+可变汇聚：把输入的元素们累积到一个可变的容器中，比如Collection或者StringBuilder。
+
+可变汇聚对应的只有一个方法：collect，正如其名字显示的，它可以把Stream中的应有元素收集到一个结果容器中。
+
+如：List<Integer> numsWithoutNull = nums.stream().filter(num -> num != null).collect(Collectors.toList());
+
+Collectors是JavaSE8提供的工具类，用于简化收集元素的操作，采用其中的静态方法。
+
+其他汇聚：除去可变汇聚剩下的，一般都不是通过反复修改某个可变对象，而是通过把前一次的汇聚结果当成下一次的入参，反复如此。如：reduce，count，allMatch。
+
+reduce方法：类似于 += 类型的操作。
+
+如：
+
+		List<Integer> ints = new ArrayList<>();
+		for(int i=1;i<11;i++) {
+			ints.add(i);
+		}
+		System.out.println("ints sum is:" + ints.stream().reduce((sum, item) -> sum + item).get());
+		
+sum表示上次函数执行的返回结果，item表示stream中的当前元素。
+
+还有一种变种写法：允许提供一个初始的值。
+
+如：System.out.println("ints sum is:" + ints.stream().reduce(0, (sum, item) -> sum + item));
+
+count方法：获取Stream中元素的个数。
+
+如：System.out.println("ints sum is:" + ints.stream().count());
+
+allMatch：是不是Stream中的所有元素都满足给定的匹配条件。如：System.out.println(ints.stream().allMatch(item -> item < 100));
+
+anyMatch：Stream中是否存在任何一个元素满足匹配条件。
+
+findFirst: 返回Stream中的第一个元素，如果Stream为空，返回空Optional。
+
+noneMatch：是不是Stream中的所有元素都不满足给定的匹配条件。
+
+max和min：使用给定的比较器（Operator），返回Stream中的最大或最小值。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

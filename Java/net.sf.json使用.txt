@@ -1,0 +1,30 @@
+fastjson无法处理非标准格式的json，这种情况下使用net.sf.json会比较好，但是net.sf.json需要引入的包很多并且速度没有fastjson快，但net.sf.json的功能要相对强大一些。
+
+引入这些包：
+
+commons-beanutils-1.7.jar
+commons-collections-3.2.1.jar
+commons-lang-2.5.jar   (这里用三的版本会报错)
+commons-logging.jar
+ezmorph-1.0.6.jar
+json-lib-2.4-jdk15.jar
+
+
+如：
+
+
+		List<Map<String,Object>> list = new ArrayList<>();
+		for(int i = 1;i < 4;i++) {
+			Map<String,Object> map = new HashMap<>();
+			map.put("key", "value" + i);
+			list.add(map);
+		}
+		
+		JSONArray array = JSONArray.fromObject(list);
+		array.forEach(a -> {
+			if(a instanceof JSONObject) {
+				JSONObject obj = (JSONObject)a;
+				System.out.println(obj.getString("key"));
+			}
+		});
+

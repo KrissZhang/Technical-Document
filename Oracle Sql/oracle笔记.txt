@@ -1,0 +1,430 @@
+1.系统用户：
+
+oracle安装自动产生sys和system用户。
+sys具有最高权限，sysDBA角色，有create database权限，默认密码：change_in_install
+system也有很大权限，sysoper角色，没有create database权限，默认密码：manager
+
+2.数据类型：
+
+char(size) 存放字符串，最大2000个字符，定长。超过长度报错，不足长度，用空格占位。
+varchar2(size) 变长，最大可以存放4000个字符。
+nchar(size) 定长，Unicode编码，最大字符数是2000个。一个汉字占一个nchar字符空间，占两个char字符空间。
+nvarchar2(size) 变长，Unicode编码，最大字符数是4000个。
+clob 字符型大对象，变长，最大8TB
+blob 变长
+注：数据库中很少存文件。
+number(p,s) p为所有位数，s为小数位，没有小数位直接使用number。 如：number(5,1)  可以存 -9999.9到9999.9的数据。
+date：日期类型，包含年月日、时分秒。使用to_date、to_char在字符串和日期类型之间转换。
+
+
+3.基本查询：
+
+insert、update、delete、select
+is null、is not null、distinct、as、nvl(null,'0')
+A.a||''||B.b、where、like '_X%'、in、order by
+max、min、avg、sum、count 分组必须包含分组字段且仅保留分组信息
+group by、having 限制分组信息、
+
+关于分组：(1) 分组函数只能存在于分组列表、having、order by 中。(2)在select 语句中的顺序是group by 、having、order by。
+
+自连接、all(select num from emp)、any(select num from emp)、
+oracle分页查询：SELECT T2.* FROM (SELECT T1.*, ROWNUM RN FROM (SELECT * FROM EMP) T1 WHERE ROWNUM < = 6) T2 WHERE RN > = 4
+
+union、union all、intersect 交集、minus 差集。
+内连接、外连接(左、右)、全外连接。
+
+oracle分页：
+
+SELECT K.* FROM
+(SELECT T.*,ROWNUM AS ROWINDEX FROM
+(SELECT E.* FROM CWR_EQUIPMENT E ORDER BY E.EAF_CREATETIME DESC) T) K
+WHERE K.ROWINDEX < = 10 AND K.ROWINDEX > = 1
+
+虚拟统计：
+
+SELECT SUM(T.CELL1),SUM(T.CELL2),SUM(T.CELL3) FROM 
+(SELECT 0 AS CELL1,1 AS CELL2,1 AS CELL3 FROM DUAL
+UNION ALL
+SELECT 1 AS CELL1,3 AS CELL2,1 AS CELL3 FROM DUAL
+UNION ALL
+SELECT 2 AS CELL1,1 AS CELL2,2 AS CELL3 FROM DUAL) T
+
+
+4.内置函数：
+
+(1)字符函数：
+
+lower 小写、upper 大写、length 返回长度、substr(str,m,n) 取str的n位,从m开始取
+replace(str,search,replace)、instr(str1,str2) 取子串在字符串中的索引
+
+(2)数学函数：
+
+round(n,m) 省略m 四舍五入到整数，m为正数，四舍五入到小数点后m位，m为负数，四舍五入到小数点前m位。
+
+trunc(n,m)  截取数字，省略m截取整数，m为正数截取到小数点后m位，m为负数截取到小数点前m位。
+
+mod(m,n) 取余
+
+floor(n) 返回小于或等于n的最大整数
+
+ceil(n) 返回大于或等于n的最小整数
+
+abs 绝对值、acos 反余弦、asin 反正弦、atan 反正切、cos 余弦、exp(n) e的n次幂、log(m,n) 返回对数值、power(m,n) 返回m的n次幂
+
+(3)日期函数：
+
+sysdate 系统时间、add_months(d,n) 在日期上增加n个月、last_day(d) 返回指定日期所在月份的最后一天
+
+(4)转换函数：
+
+to_char(sysdate,'format')、to_date(String,'format')
+
+5.事务：
+
+原子性、一致性、隔离性。
+
+commit;
+rollback;
+
+6.数据完整性：
+
+not null 非空键、unique 唯一键、primary key 主键、foreign key 外键、check 自定义约束
+
+7.序列：自增字段。
+
+8.索引：加速数据存取的数据对象。
+
+使用原则：(1)在大表上加索引 (2)在where子语句上加索引 (3)索引的层次不要超过4层
+
+9.PL/SQL：oracle在标准sql上的扩展，允许使用条件和循环语句。
+
+(1)存储过程：
+
+create procedure proc1(param1 in var1,param2 out var2)
+is
+begin
+  执行语句;
+end;
+
+命名：变量v_sal,常量c_sal,游标e_cursor,例外e_error
+
+注释：--,/*...*/
+
+块：declare 定义部分,begin 执行部分,exception 例外
+
+& 表示接受从控制台输入的变量,||表示两个字符串拼接。
+
+(2)函数：
+
+create function func1(参数)
+return 数据类型
+is
+定义变量;
+begin
+	执行语句;
+end;
+
+(3)包：用于管理函数或者存储过程。
+
+创建包基本语法：  
+create or replace package 包名  
+is  
+--声明过程  
+function 过程名(参数1…) return 返回类型;  
+--声明过程  
+procedure 函数名(参数1…) return 返回类型;  
+end;  
+
+
+创建包体基本语法：  
+create or replace package body 包名  
+is  
+--实现过程  
+function 过程名(参数1…) return 返回类型  
+is  
+--定义变量  
+begin  
+--执行语句  
+end;  
+--实现函数  
+procedure 函数名(参数1…) return 返回类型  
+is  
+--定义变量  
+begin  
+--执行语句  
+end;  
+end;  
+
+(4)触发器：隐含执行的存储过程。
+
+error_number_in[自定义] 从-20000到-20999之间，error_msg_in[自定义]不能超过2K，否则截取2K。
+
+create [or replace] trigger 触发器名称
+{before|after} {insert、update、delete[of 列]}
+on [方案名.]表名
+[for each row]                             --表明是行级触发器还是表级触发器
+[when 条件]
+begin
+--触发器内容
+end;
+
+
+例子：
+
+--②当用户在星期天对某张表进行delete时，我们提示不能这样操作  
+create or replace trigger tri1  
+before insert or update or delete on scott.emp  
+begin--更加精准的告诉你正在做什么  
+  case  
+    when inserting then  
+      dbms_output.put_line('请不要添加');  
+      raise_application_error(-20001,'请不要添加');  
+    when updating then  
+      dbms_output.put_line('请不要修改');  
+      raise_application_error(-20002,'请不要修改');  
+    when deleting then  
+      dbms_output.put_line('请不要删除');  
+      raise_application_error(-20003,'请不要删除');  
+  end case;  
+end  
+
+
+:old 修饰操作完成后的值。
+
+insert(null)、update(有效)、delete(有效)
+
+:new 修饰操作完成前的值。
+
+insert(有效)、update(有效)、delete(null)
+
+删除触发器：drop trigger 触发器名;
+
+(5)PL/SQL：语法数据类型。
+
+标量类型：名称[constant] 数据类型 [not null] [:=初始值]
+
+定义一个变长字符串                                 v_enamevarchar2(10)
+定义一个小数 范围-9999.99-9999.99                   v_sal number(6,2);
+定义一个小数并给一个初始值5.4                      v_salnumber(6,2):=5.4  := 是pl/sql的赋值号
+定义一个日期类型的数据                             v_hiredate date;
+定义一个布尔变量，不能为空初始值为false             v_valid Boolean:=false
+
+
+为了让v_ename类型更加灵活，我们使用%type       v_ename emp.ename%type;
+让我们在PL/SQL编程中，让变量类型和大小与表的列的大小和类型一致。
+
+
+复合类型：类似于结构体。
+
+基本语法：  
+type 自定义的pl/sql记录名 is record(  
+变量名 变量类型,  
+变量名 变量类型  
+)  
+//使用自定义的pl/sql记录名  
+变量名 自定义的pl/sql记录名;  
+
+
+PL/SQL表：相当于Java中的数组。
+
+declare  
+type hao_table_type is table of emp.ename%type index by binary_integer;  
+--定义一个变量：sp_table：类型  
+hao_table hao_table_type;  
+begin  
+select ename into hao_table(-1) from emp where empno=7788;  
+dbms_output.put_line('员工'||hao_table(-1));  
+end;  
+--说明 hao_table_type 是pl/sql类型  
+-------emp.ename%type 指定了表的类型和长度  
+-------sp_table为pl/sql表变量  
+-------hao_table(0)则表示下标为0的元素 pl/sql下标都可以为负数  
+
+
+参照类型(游标)
+
+type 游标名 is ref cursor;
+
+游标变量名 游标名;
+
+open 游标变量 for select语句;
+
+--开始循环
+fetch 游标变量 into 其他变量;
+--判断循环是否到最后
+游标变量%notfound;
+
+--关闭游标
+close 游标变量
+
+例子：
+
+--②在①基础上，若某个员工的工资低于200元，就增加100元  
+create or replace procedure pro1(v_in_deptno number) is  
+--先定义一个游标变量类型  一个变量类型可以定义多个变量  
+type emp_cursor is ref cursor;  
+--定义1个游标变量  
+v_emp_cursor emp_cursor;  
+--定义2个变量  
+v_ename emp.ename%type;  
+v_sal emp.sal%type;  
+v_empno emp.empno%type;  
+begin--两个空格  
+  --执行语句  
+  --打开游标  
+  open v_emp_cursor for select ename,sal,empno from emp  
+  where deptno=v_in_deptno;  
+  --取出游标指向的每行数据，用循环语句  
+  loop  
+    fetch v_emp_cursor into v_ename,v_sal,v_empno;--这句 导致游标往下移  
+    --判断当前游标是否达到最后  
+    exit when v_emp_cursor%notfound;  
+    --输出  输出在判断之后，先判断，否则重复输出(最后一行)  
+    dbms_output.put_line('用户名'||v_ename||' 薪水'||v_sal);  
+    ----------------------------更改地方-----------------------------  
+    if v_sal<200 then  
+      update emp set sal=sal+100 where empno=v_empno;  
+    end if;  
+  end loop;  
+  --关闭游标[完后一定要关闭游标]  
+  close v_emp_cursor;  
+end;  
+
+(6)PL/SQL进阶控制结构：
+
+条件分支：if then , if then else, if then elsif else {end if;}
+
+循环语句：
+
+loop循环：
+
+loop
+
+--执行语句
+
+exit when 条件表达式;
+
+--执行语句;
+
+end loop;
+
+while循环：略。
+
+for循环：
+
+for curIndex in startIndex..endIndex loop
+--执行语句
+end loop;
+
+注意1：在is...begin之间不能对变量进行赋值。
+注意2：不能对输入参数的值重新赋值。
+注意3：存储过程没有返回值，它的所有返回值都是通过out参数来代替的。
+
+(7)视图：虚拟表。
+
+创建视图: create view 视图名 as select 语句[withread only];
+
+创建或修改视图: create or replace view 视图名 as select 语句[with read only];
+
+删除视图: drop view视图名;
+
+
+10.oracle常用函数：
+
+(1)trunc(date): 将date按照指定格式截取。
+
+如：
+
+trunc(sysdate,'yyyy') --返回当年第一天。
+trunc(sysdate,'mm') --返回当月第一天。
+trunc(sysdate,'d') --返回当前星期的第一天。
+
+(2)trunc(number)：截取参数值。
+
+如：
+
+trunc(89.985,2)  --89.98
+trunc(89.985)   --89
+trunc(89.985,-1)  --80
+
+(3)to_char：将日期或数字转换为字符。
+
+to_char(number,'格式')  如：to_char(salary,'$99,999.99');
+to_char(date,'格式')
+
+(4)to_date(char[,'格式'])：将字符转换成日期。
+
+(5)to_number(char[,'格式'])：将字符转换成数字。
+
+(6)instr:查询是否匹配目标字符串，如果匹配那么返回目标起始索引。
+
+INSTR(源字符串,目标字符串,起始位置,匹配序号)
+
+如：INSTR('CORPORATE FLOOR','OR', 3, 2) 查找字符串中符合条件的第二个索引,从索引位置3开始找，如果没有找到返回0，如果起始位置为负数那么从右边开始查找。
+
+(7)substr：取得字符串中指定起始位置和长度的字符串。
+
+substr(str,m[,n])
+
+如：
+
+substr('this is a test',6,2)  --is
+substr('this is a test',6)  -- is a test
+
+(8)trim：oracle中用来删除给定字符串或给定数字中头部或者尾部的给定字符串。
+
+trim([leading/trailing/both][匹配字符串或数值][from][需要被处理的字符串或数值])
+
+(9)translate：
+
+translate(char, from, to)：将char中匹配from的字符替换为to的字符。
+
+(10)replace：作用类似于translate，只不过它是针对字符串，而translate是针对单个字符的。
+
+(11)decode:将输入数值与函数中的参数列表比较，根据输入值返回一个对应值。
+
+DECODE(control_value,value1,result1[,value2,result2…][,default_result]); 
+
+如：decode(str,'1','1','2','X','other');
+
+(12)nvl:判断某个值是不是空并进行替换。
+
+如:nvl(salary,'1')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

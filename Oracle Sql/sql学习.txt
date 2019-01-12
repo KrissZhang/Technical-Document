@@ -1,0 +1,47 @@
+1.union、union all：合并表格，后者不去除重复数据。
+
+2.except、except all：在表1中但不在表2中的数据，后者不去除重复数据。
+
+3.intersect：在表1和表2中都存在的数据，后者不消除重复行。
+
+4.表连接：略。
+
+5.group by：默认只能得到组相关的信息。having：限制分组数据，效率低。
+
+6.between and：包含了边界值，not between不包含边界值。
+
+7.in、not in。
+
+8.exists:判断是否存在，效率要比in高。
+
+9.oracle 不支持 top 关键字，使用rownum来解决。
+
+10.sql组合：1=1,1=2
+
+11.cast:进行数据类型的转换：
+
+(1)cast(empno as varchar2(10))   将某一列转换成字符串
+
+(2)cast('123.12' as int)  转换成数字并四舍五入
+
+12.关于connect by：返回树状结构的数据。
+
+select * from table 
+start with org_id = 'HBHqfWGWPy' 
+connect by prior org_id = parent_id; 
+
+
+table -- 查询表名
+org_id -- 根节点限制语句
+prior -- 表示上一条记录的org_id是本条记录的parent_id
+prior org_id = parent_id -- 连接条件
+
+13.
+
+
+
+
+
+
+
+

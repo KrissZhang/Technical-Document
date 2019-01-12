@@ -1,0 +1,129 @@
+常用类：
+
+1.InetAddress：
+
+表示ip地址。
+
+如：
+
+		InetAddress addr = InetAddress.getLocalHost();
+		String ip = addr.getHostAddress();
+		String name = addr.getHostName();
+		System.out.println(ip);
+		System.out.println(name);
+		
+
+常用方法：
+
+getAddress() --返回此 InetAddress对象的原始IP地址。
+getByName(String host) --在给定主机名的情况下确定主机的IP地址。
+getHostAddress() --返回IP地址字符串（以文本表现形式）。
+getHostName() --获取此IP地址的主机名。
+getLocalHost() --返回本地主机。
+
+2.URL：
+
+统一资源定位符。
+
+如：
+
+		URL url = new URL("http://localhost:9193/ReportServer?sessionID=86905&_=1503633287166");
+		String src = url.getFile();
+		System.out.println(src);
+		
+使用toURI()和URI.toURL()实现和URI的互相转换。
+	
+3.URLConnection：
+
+代表应用程序和URL之间的通信链接，可用于读取和写入URL引用的资源。
+一般使用HttpURLConnection。
+
+4.HttpURLConnection：
+
+支持HTTP特定功能的URLConnection。
+
+如：乱码问题未解决
+
+		URL url = new URL("http://localhost:9193/txieasyui?taskFramePN=MeetingManagment&command=getNextMeetingSetByThisWeekId&colname=json_ajax&colname1={%27dataform%27:%27eui_datagrid_data%27,%27tablename%27:%27detail0%27,%27footerfields%27:%27%27}&weekId=1900A8BAB57684F91B9DA6FB970FEEFB");
+		URLConnection conn = url.openConnection();
+		HttpURLConnection httpConn = (HttpURLConnection)conn;
+		httpConn.setRequestMethod("POST");
+		httpConn.setDoOutput(true);
+		httpConn.setDoInput(true);
+		httpConn.setUseCaches(false);
+		httpConn.setRequestProperty("Content-type", "application/x-java-serialized-object");
+		httpConn.connect();		
+		InputStream is = httpConn.getInputStream();
+		int charX;
+		while((charX = is.read()) != -1){
+			System.out.print((char)charX);
+		}
+		
+5.
+
+DatagramPacket：表示数据报包，数据报包用来实现无连接包投递服务。
+DatagramSocket：表示用来发送和接收数据报包的套接字。
+
+
+接收端：
+
+		DatagramSocket socket = new DatagramSocket(10003);
+		
+		byte[] buff = new byte[1024];
+		DatagramPacket packet = new DatagramPacket(buff,buff.length);
+		
+		socket.receive(packet);
+		System.out.println(new String(packet.getData(), 0, packet.getLength()));
+		
+		socket.close();
+
+
+发送端：
+
+		DatagramSocket socket = new DatagramSocket();
+		
+		byte[] buff = "Hello World1.".getBytes();
+		DatagramPacket packet = new DatagramPacket(buff,buff.length,InetAddress.getByName("localhost"),10003);
+		
+		socket.send(packet);
+		socket.close();
+		
+6.
+
+Socket：客户端套接字。
+ServerSocket：服务端套接字。
+
+运用实例参考其他资料，已测试实践过。
+
+7.
+
+URLEncoder：HTML格式编码的实用工具类。
+
+encode(String s, String enc) --使用指定的编码机制将字符串转换为application/x-www-form-urlencoded格式。
+
+URLDecoder：HTML格式解码的实用工具类。
+
+decode(String s, String enc) --使用指定的编码机制对application/x-www-form-urlencoded字符串解码。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

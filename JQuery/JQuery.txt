@@ -1,0 +1,645 @@
+1.JQuery的作用：
+
+(1)取得文档中的元素。
+(2)修改页面的外观。
+(3)改变文档的内容。
+(4)响应用户的交互操作。
+(5)为页面增加动态效果。
+(6)无刷新从服务器中获取信息。
+(7)简化常见的js任务。
+
+2.引入JQuery：
+
+下载JQuery库文件后，在头标签中使用<script>标签引入即可。
+
+(1)$()：返回一个JQuery对象实例。
+
+(2)页面加载完成后执行：
+	$(document).ready(function(){
+
+	});
+	
+3.前端开发工具：
+
+(1)谷歌浏览器F12。
+(2)console.log();
+
+4.DOM：文档对象模型。
+
+DOM充当了JavaScript和网页之间的接口。
+
+祖先元素、父元素、子元素、同辈元素：略。
+
+使用$()方法接收css选择符作为参数返回页面对应元素的jQuery对象，有三种基本的操作符：标签名、Id、类。
+
+如：
+
+$('p')、$('#id')、$('.className')。
+
+5.css选择符：基本上兼容所有浏览器。
+
+(1)子元素组合符：> ，如：$('#id > li')，指定id下所有的li元素。同时满足两个样式的筛选方式：$(".aaa.bbb")。
+(2)否定式伪类：:not(.className)，如：$('#id > li:not(.className)')
+
+(3)属性选择符：
+
+如：$('img[alt]')，获取包含alt属性的img元素。
+
+属性名使用类似正则表达式的方法来描述：^表示值在字符串开始，$表示值在字符串结尾，*表示在字符串的任意位置，!表示对值取反。
+
+如：$('a[href^="mailto:"]')：href以值mailto:开头的a标签元素。
+
+组合使用时描述是且的关系：
+
+$('a[href^="http://"][href$=.jsp]')
+
+自定义选择符：速度稍慢。
+
+eq(0)
+
+如：$('div.className:eq(1)') :有className类的div中的第二个元素。
+
+:odd、:even   奇数、偶数。如：$('tr:odd')、$('tr:even')
+
+:nth-child()：相对于元素的父元素来获取位置。可以接受数值、odd、even来作为参数。如：$('tr:nth-child(odd)')，nth-child是唯一从1开始计数的选择符。
+
+基于表单的自定义选择符：
+
+:input、:button、:enabled、:disabled、:checked、:selected。
+
+如：$('input[type=radio]:checked')
+
+DOM遍历方法：
+
+.find()方法：$("p").find("a").attr('href');
+
+.filter()方法：
+
+如：$('tr').filter(':even')
+
+.filter()方法还可以接受方法参数。
+
+如：$('a').filter(function(){
+	return this.hostname && this.hostname != location.hostname;
+})
+
+获取所有外部链接。
+
+连缀：
+
+.next()、.nextAll()、.prev()、.prevAll()、.siblings()：同级下一个、同级后面所有、同级上一个、同级上面所有、同级其他。
+
+追加.addBack()可以再包含原来的元素。
+
+从JQuery对象获取DOM元素$('#id').get(0)或者$('#id')[0]。
+
+6.事件：
+
+(1)加载时机：
+
+$(document).ready(function(){}) ：DOM就绪并可以使用时调用，但关联文件不一定下载完毕。
+window.onload() ：全部元素都加载完毕。
+
+一般来说，第一种优于第二种写法。
+
+(2)样式的引用放在js外部文件引用前面。
+
+(3)引用函数与调用函数：
+
+只有函数名而没有括号的为引用函数，不会立即执行，而是为了将来执行。反之，包含括号的是调用函数，立即执行。
+
+(4).ready()的简写形式为：
+
+$(function(){
+
+});
+
+(5)解决$符号在多个库之间的命名冲突：
+
+<script>
+	jQuery.noConflict();
+</script>
+
+上述引用将$的使用权让渡给最先包含的库，写jQuery时，用jQuery来代替$符号。
+
+或者在方法中接收一个$对象，重新使用。
+
+jQuery(document).ready(function($){
+
+});
+
+jQuery(function($){
+
+});
+
+(6)指定DOM事件：
+
+$("#id").on('click',function(){
+	alert('123');
+});
+
+(7)事件上下文：
+
+this关键字可以指代引用的DOM元素，使用$(this)为引用的元素创建jQuery对象。
+
+如：
+
+$("#id").on('click',function(){
+	console.log($(this).val());
+});
+
+(8)事件简写：
+
+如：可以将事件简写为下面的方式：
+
+$("#id").click(function(){
+
+});
+
+(9)增删样式高级方法：toggleClass
+
+如：
+
+$("#div1").toggleClass("hide1");
+
+(10)hover方法：作用类似于.hover样式伪类。
+
+接收两个方法参数：第一个进入元素时触发，第二个离开元素时触发。
+
+如：
+
+$("#click1").hover(function () {
+    alert('in');
+},function () {
+    alert('out');
+});
+
+(11)事件捕获与事件冒泡：
+
+事件捕获：事件发生时，事件会首先交给最外层的元素执行。
+事件冒泡：与事件捕获完全相反的策略。
+
+DOM标准：从一般元素到具体元素捕获，再冒泡返回DOM树顶层。
+
+事件冒泡的副作用：会使具体元素的某些方法(如：mouseout)也放到上层元素执行。
+
+(12)事件对象：是一种DOM结构，会在调用函数时，传递给执行的方法。
+
+event.target：事件对象。
+
+如：
+
+$("#click1").on('click',function (event) {
+    if(event.target == this){
+        alert($(this).val());
+    }
+});
+
+停止事件传播：
+
+在事件函数结尾使用event.stopPropagation()，这样处理后则仅有指定按钮可以触发事件函数。
+
+阻止默认操作：
+
+在事件函数结尾使用event.preventDefault()，这样处理后可以阻止默认操作。
+
+同时停止事件传播和阻止默认操作可以使用简写，在事件函数末尾直接return false;
+
+(13)事件委托：略。
+
+(14).is()方法：测试对象是否和传入的选择符表达式匹配。
+
+如：
+
+if($(event.target).is("#click1")){
+    alert('1');
+}
+if($(event.target).is("#click2")){
+    alert('2');
+}
+if($(event.target).is(".class1")){
+    alert('3');
+}
+
+(15)内置事件委托：
+
+如：
+
+$("#id").on('click','button',function(){
+	alert('123');
+});
+
+与前文代码相比，会进行event.target和'button'的事件目标比较。
+
+(16)移除事件处理程序：
+
+如：
+
+$("#div1 > input").off('click');
+
+(17)事件处理命名空间：将某种事件进一步细分控制。
+
+如：
+
+$("#div1 > input").on('click.rm1',function () {
+    alert($(this).val());
+});
+
+$("#div1 > input").on('click.rm2',function (event) {
+    if($(event.target).is('#click3')){
+        $("#div1 > input").off('click.rm1');
+    }
+    alert('cl2');
+});
+
+(18)事件重新绑定：
+
+如下，变量化方法。
+
+var func = function () {
+    alert('123');
+};
+
+$("div > input").on('click',func);
+
+$("input[name='click3']").on('click',function () {
+    $("div > input").off('click',func);
+});
+
+(19)只触发一次的事件：
+
+var func = function () {
+    alert('123');
+};
+
+$("div > input").one('click',func);
+
+(20)模拟用户操作：
+
+如：
+
+$("#id").trigger('click');
+$("#id").click();
+
+(21)响应键盘事件：
+
+键盘事件分为两种：直接对键盘按键响应的事件(keyup和keydown)、对文本输入进行响应的事件(keypress)。
+
+第一种，如：
+
+    var func1 = function () {
+        alert('111');
+    };
+
+    var func2 = function () {
+        alert('222');
+    };
+
+    $(document).keyup(function (event) {
+        if(event.keyCode == 49){
+            $("div > input").off('click',func2);
+            $("div > input").on('click',func1);
+        }else if(event.keyCode == 50){
+            $("div > input").off('click',func1);
+            $("div > input").on('click',func2);
+        }
+    });
+
+第二种，如：
+
+$(document).keyup(function (event) {
+    var key = String.fromCharCode(event.keyCode);
+    if(key == '1'){
+        $("div > input").off('click',func2);
+        $("div > input").on('click',func1);
+    }else if(key == '2'){
+        $("div > input").off('click',func1);
+        $("div > input").on('click',func2);
+    }
+});
+
+7.样式与动画：
+
+(1)修改内联样式：
+
+.css()方法，如下三种用法：
+
+$("#divCss").css('background-color','gray');
+
+$("#divCss").css({
+    'font-size':'30px',
+    'color':'red'
+});
+
+alert($("#divCss").css('font-size'));
+
+(2)带厂商前缀样式属性：
+
+浏览器厂商在引入试验性的样式属性时，会在达到css规范要求前在属性名称前加前缀。等到稳定之后再去掉。纯js在使用这些属性时需要判断它们在浏览器中是否存在，但在jQuery中可以直接使用标准的属性名而无需判断。
+
+如：-webkit-property-name
+
+.css('property-name','value');
+
+(3)隐藏和显示元素：
+
+立即隐藏和显示：.hide()、.show()。在处理时，会记住display的值，然后取反。
+
+(4)效果和时长：
+
+指定显示和隐藏的速度：向.hide()、.show()传速度参数时，会产生动画效果。
+
+如：.hide('fast')、.hide(550)、.hide('slow')。
+
+淡入淡出：逐渐增加或降低不透明度。
+
+.fadeIn()、.fadeOut()：用法和显示隐藏类似。
+
+滑下和滑上：
+
+在文档流中的元素，用淡入淡出来处理会有位置跳动，这时候用滑下滑上来处理比较好。
+
+.slideDown()、.slideUp()：用法和显示隐藏类似。
+
+切换可见性：自动切换开始和隐藏。
+
+可以用.is()方法手动判断属性也可以使用下面提供的API。
+
+.toggle('slow')、.fadeToggle('slow')、.slideToggle('slow')：分别对应显示/隐藏、淡入/淡出、滑下滑上。
+
+自定义动画：.animate()。略。
+
+并发与排队效果：略。
+
+8.操作DOM：
+
+(1)操作属性：
+
+类属性：.addClass('className')、.removeClass('className')、.toggleClass('className')。
+
+非类属性：
+
+使用.attr()和.revoveAttr()来操作DOM元素属性，用法和.css()类似。
+
+值回调：给参数传一个函数而不是具体的值。
+
+值回调每次都会传入两个参数，第一个是整数，表示迭代次数。第二个是修改前属性的值。
+
+如：
+
+$("p").attr({
+   id:function (index,oldValue) {
+        return 'p'+index;
+   }
+});
+
+HTML属性：标记中放在引号中的值。
+DOM属性：js能够存取的值。
+
+一般情况下两者差不多，但是有时候会有不匹配的情况发生。这时候就不能用.attr()方法，而应该使用.prop()方法。用法和attr类似。
+
+表单控件中的值HTML属性和DOM属性差别很大，这时候最好使用.val()方法而不是上面两种。
+
+(2)DOM树操作：
+
+$()除了创建jQuery对象，还可以在$()中放一组元素，以创建DOM元素。如：$('<a id="id1"></a>')
+
+插入新元素：
+
+.insertBefore()：在现有元素外部、之前添加内容。
+.prependTo()：在现有元素内部、之前添加内容。
+.appendTo()：在现有元素内部、之后添加内容。如：$("<a href='#'>123</a>").appendTo('p');
+.insertAfter()：在现有元素外部、之后添加内容。如：$("<a href='#'>123</a>").insertAfter('p');
+
+.each()：显式迭代器。与数组迭代器.forEach()非常类似。
+
+包装元素：.wrapAll()和.wrap()方法。
+
+$("span").each(function (index) {
+    $("<a href='#'>链接</a>").appendTo($(this)).wrapAll('<ol></ol>').wrap('<li></li>');
+});
+
+移动元素：获取索引位置，增删元素。
+
+反向插入方法：与上述四个方法对应，元素和位置结构相反，但功能一致。
+
+.before()：
+.prepend()：
+.append()：如：$("#sp1").append("<a href='#'>123</a>");
+.after()：
+
+(3)复制元素：
+
+.clone()：复制元素。如果传参true，表示连事件一起复制。
+
+如：
+
+var copyDom = $("#sp1").clone();
+$("p:eq(0)").append(copyDom);
+
+(4)内容getter和setter方法：
+
+.html()：设置或获取元素内容。
+.text()：设置或获取元素的纯文本。
+
+(4)总结：
+
+要在HTML中创建新元素，使用$()函数。
+要在每个匹配的元素中插入新元素，使用：.append()、.appendTo()、.prepend()、.prependTo()。
+要在每个匹配的元素相邻的位置上插入新元素，使用：.after()、.insertAfter()、.before()、.insertBefore()。
+要在每个匹配的元素外部插入新元素，使用：.wrap()、.wrapAll()、.wrapInner()--在每个匹配元素内包裹上指定元素。
+要用新元素或文本替换每个匹配的元素，使用：.html()、.text()、.replaceAll()、.replaceWith()。replaceAll和replaceWith仅目标元素和选择元素的位置不同，功能类似。将目标元素替换成指定DOM结构。
+要移除每个匹配的元素中的元素，使用：.empty()。
+要从文档中移除每个匹配的元素及其后代元素，但不实际删除它们，使用：.remove()、.detach()。detach会保留绑定事件和附加数据，而remove不会。
+
+9.通过ajax发送数据：
+
+(1)Ajax：异步JavaScript和XML。
+
+(2)片段：
+
+不包含完整的DOM结构，仅作为其他文件加载使用。
+加载文件片段，如：
+
+test2.html：
+
+<div>
+    <a href="#">999</a>
+</div>
+
+$("p:eq(0)").load('test2.html');
+
+(3)JSON：使用[]和{}组合构成的数据结构。键和字符串必须包含在双引号中，且不能使用函数。
+
+(4)全局jQuery函数：类似于类方法。
+
+(5)$.each()方法：
+
+如：
+
+var arr = [];
+arr.push({'key1':'value1'});
+arr.push({'key1':'value2'});
+arr.push({'key1':'value3'});
+$.each(arr,function (entryIndex, entry) {
+    console.log(entryIndex);
+    console.log(entry.key1);
+});
+
+(6)$.getJSON()、$.getScript()、$.get()、$.post()是$.ajax()的简写。
+
+(7)向服务端传递数据：
+
+使用$.get()、$.post()发送get和post请求。
+
+序列化表单：.serialize()，略。
+
+关注请求：
+
+.ajaxStart()：当Ajax请求开始且尚未进行其他传输时，会触发.ajaxStart()的回调函数。（全局函数）
+.ajaxStop()：当最后一次活动请求终止时，则会执行通过 .ajaxStop() 注册的回调函数。（全局函数）
+
+如：
+
+var $loading = $("#id").prepend('<div id="loading">Loading...</div>');
+
+$(document).ajaxStart(function() {
+	$loading.show();
+}).ajaxStop(function() {
+	$loading.hide();
+});
+
+以上方法也可以在$.ajax()中实现。
+
+.ajaxError()：用法和前两者类似。
+
+$.ajax()：更具体的使用用这个方法，目前用这种最好。
+
+(8)错误处理：
+
+连缀.done()、.always()、.fail()方法来处理特殊情况，这里用分支更好。
+
+.status属性返回服务器的状态码。
+
+(9)Ajax和事件：丢失事件绑定的场景，略。
+
+(10)安全：
+
+使用$.parseJSON()、JSON.stringify()来处理JSON字符串。$.parseJSON()对格式要求必要高，如果不能使用时，可以尝试用JSON.parse()。
+
+JSONP：JSONP的格式是把标准JSON文件包装在一对圆括号中，圆括号又前置一个任意字符串。略。
+
+(11)低级Ajax方法：
+
+如：
+
+$.ajax({
+	url: 'url',
+	type: 'get',
+	async: true,
+	dataType: 'json',
+	data:{
+		param1:value1,
+		param2:value2
+	},
+	success: function(data) {
+		console.log(data);
+	},
+	error: function(data) {
+		console.log(data);
+	}
+});
+
+10.使用插件：
+
+jQuery官方插件库：http://plugins.jquery.com/，也可以百度其他好一点的插件库。
+
+(1)使用插件：
+
+Cookie插件：$.cookie()。
+
+(2)jQuery UI插件库：http://jqueryui.com/，略。
+
+(3)jQuery Mobile插件库：移动端用的插件库，略。
+
+11.开发插件：略。
+
+12.JavaScript闭包：
+
+(1)创建内部函数：内部方法只能在外部方法中使用。在外部方法中使用return返回内部函数后，可以在任何位置使用。内部函数可以像其他函数一样引用全局变量。
+
+如：
+
+function test() {
+    function innerFn() {
+        console.log("inner");
+    }
+    console.log('1');
+    innerFn();
+}
+
+JavaScript闭包可能造成内存泄漏的问题，小心使用。
+
+13.使用QUnit测试JavaScript：
+
+下载QUnit：http://qunitjs.com/。
+
+对于异步测试有特殊的方法特殊处理。
+
+14.参考：太多了，需要时，参考书。
+
+========================================================
+
+第9到第13章为前面核心内容的进阶，后面有时间再看。
+
+========================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

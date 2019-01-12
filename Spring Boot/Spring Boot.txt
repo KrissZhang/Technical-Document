@@ -1,0 +1,160 @@
+1.Spring Boot新项目结构：
+
+(1)POM.xml：项目构建说明文件。
+(2)DemoApplication.java：应用程序的启动引导和配置类。
+(3)application.properties：应用程序和Spring Boot的配置文件。
+(4)DemoApplicationTests.java：基本的继承测试类。
+
+DemoApplication类说明：
+
+@SpringBootApplication注解：开启组件扫描和自动配置。包括三个注解： @Configuration (标明该类使用Spring基于Java的配置)、 @ComponentScan(启用组件扫描、这样控制器类才能被自动发现为Spring应用程序上下文的Bean，控制器使用@Controller 进行注解)、
+@EnableAutoConfiguration(开启Spring Boot自动配置)。
+
+DemoApplication类可以使应用程序被当做一个jar来运行，直接Run As->Java Application即可。
+
+如果启动类和控制器类不在同一个包中，那么就要在启动类中加入扫描注解：@ComponentScan(basePackages= {"com.self.controller"})。
+
+如果需要Spring Boot默认外的其他配置，最好写到一个用 @Configuration注解的其他独立类中而不要直接修改DemoApplication类。
+
+
+DemoApplicationTests类说明：
+
+使用注解@RunWith(SpringRunner.class)、@SpringBootTest来标识当前类是一个测试类，测试类下用@Test来标识方法是测试方法。
+
+如：
+
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class DemoApplicationTests {
+
+	@Test
+	public void contextLoads() {
+		Assert.assertEquals(true, true);
+	}
+
+}
+
+application.properties：
+
+细粒度调整Spring Boot的自动配置。
+
+如：server.port=8000   --修改Tomcat监听端口为8000。
+
+
+POM.xml文件构建项目：
+
+POM.xml文件包含了项目构建的基本信息。<dependencies>标签下可以添加项目所需的starter起步依赖。
+
+2.起步依赖：
+
+将多个细粒度组件绑定到一起支持某项功能的依赖套件。起步依赖使用的版本是由当前使用的Spring Boot的版本决定的，不需要特别指定。
+
+当我们要特别指定某个组件使用的版本时，可以用 <exclusions>标签来排除包含的组件，然后再自行定义需要使用到的组件和版本信息。覆盖依赖时要特别小心组件间的兼容性问题。
+
+3.自动配置的使用：
+
+JPA部分：
+@Entity --指定类为JPA实体模型类。
+
+@Id
+@GeneratedValue(strategy=GenerationType.AUTO)  --指定属性为标识字段，并且自动增长。
+
+略。
+
+Spring MVC部分：
+
+类：
+@Controller  --声明控制器类
+@RequestMapping("/")  --将控制器类中所有的处理方法都映射到"/"这个URL路径上。
+private 接口类型 接口引用;  --声明注入引用
+
+方法：
+
+控制器构造方法：
+
+@Autowired
+public 类名(注入接口类型 注入接口对象){
+	this.接口引用 = 注入接口对象;
+}
+
+一般请求方法：视图和模型的处理，如果不使用模板框架则可以忽略。
+
+@RequestMapping(value="/{reader}", method=RequestMethod.GET)--处理/{reader}上的GET请求
+public String questMethod(@PathVariable("reader") String reader,Model model){
+	
+	......
+	
+	model.addAttribute("books", readingList);--将数据加入模型，使用的键为books
+	return "XXXX";--返回视图逻辑名称
+}
+
+@RequestMapping(value="/{reader}", method=RequestMethod.POST)--处理/{reader}上的POST请求
+public String executeMethod(@PathVariable("reader") String reader, Book book) {
+	book.setReader(reader); --将reader绑定到book对象上
+	readingListRepository.save(book);
+	return "redirect:/{reader}"; --重定向新页面
+}
+
+前端页面：前端静态文件应该放在src/main/resources/目录下，建一个static的文件夹，以此文件夹为根目录访问页面。
+
+4.实例总结：
+
+fastjson依赖包需要自己添加到起步依赖。
+
+启动时多包扫描：@ComponentScan(basePackages= {"com.self.controller","com.self.business","com.self.dao"})。
+
+js使用ajax请求地址为类url+方法url，如：/test/hello。
+
+自动注入时，必须要在启动时扫描各个层的包。
+
+--自动注入对象
+@Autowired
+private BusinessTest businessTest;
+
+@Autowired
+private DaoTest daoTest;
+
+--声明该类是业务层组件
+@Service
+public class BusinessTest {
+
+}
+
+--声明该类是持久层组件
+@Repository
+public class DaoTest {
+
+}
+
+使用@RestController不要使用@Controller。
+
+5.静态页面和动态页面：
+
+静态页面的默认目录是：src/main/resources下的static目录。
+动态页面(模板引擎生成的页面)的默认目录：src/main/resources下的templates目录。返回页面如：return "/index"。
+
+6.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

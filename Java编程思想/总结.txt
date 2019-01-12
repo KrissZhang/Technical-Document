@@ -1,0 +1,543 @@
+1.任意精度的整数和浮点数：
+
+BigInteger、BigDecimal
+
+2.逗号运算符，唯一的使用场景就是for循环中。
+
+3.finalize：
+
+该方法在回收垃圾时调用。
+
+4.内部类：主要用于访问权限的控制。
+
+包括存在于类中的内部类和在方法中的内部类。
+
+类中的内部类：
+
+(1)初始化一个内部类对象：
+
+		Outter o = new Outter();
+		Inner i = o.new Inner();
+		
+(2)存在于类中内部类的典型用法：可以用于通过其他接口对外部类塑型。
+
+package com.self.test4;
+
+import com.self.test4.C.E;
+
+public class Test {
+	
+	public static void main(String[] args) {
+		C c = new C();
+		E e = c.getE();
+		//D d = c.getD(); //这里的类D是私有的无法访问
+	}
+	
+}
+
+/**
+ * 模板类A 
+ */
+abstract class A{
+	private String value;
+	public abstract void func1();
+}
+
+/**
+ * 模板接口B 
+ */
+interface B{
+	void func2();
+}
+
+/**
+ * 外部类C 
+ */
+class C{
+	/**
+	 * 依照模板产生的新类D 
+	 */
+	private class D extends A{
+		private String value = "000000";
+		public void func1(){
+			System.out.println("123");
+		}
+	}
+	
+	/**
+	 * 依照模板产生的新类E 
+	 */
+	protected class E implements B{
+		public void func2(){
+			System.out.println("123");
+		}
+	}
+	
+	//内部类获取对象D
+	public D getD(){
+		return new D();
+	}
+	
+	//内部类获取对象E
+	public E getE(){
+		return new E();
+	}
+	
+}
+
+(3)存在于方法中的内部类：
+
+有名字的方法域级别内部类：内部类的使用范围不能超过方法域的范围。
+
+package com.self.test4;
+
+public class Test {
+	
+	public static void main(String[] args) {
+		B b = new B();
+		System.out.println(b.func());
+	}
+	
+}
+
+interface A{
+	
+}
+
+class B{
+	public String func(){
+		class C implements A{
+			private String name = "default";
+			public String getValue(){
+				return name;
+			}
+		}
+		
+		return new C().getValue();
+	}
+}
+
+匿名内部类：没有名字，没有构造器，常用于非常小的代码结构。
+
+package com.self.test4;
+
+public class Test {
+	
+	public static void main(String[] args) {
+		System.out.println(new A(){
+			public String getValue(){
+				return "222";
+			}
+		}.getValue());
+	}
+	
+}
+
+interface A{
+	
+}
+
+注：在内部类的隐匿策略中，可以自动访问外部类的所有资源。这是因为内部类对象自动获取外部类对象的一个引用。
+
+
+(3)链接到外部类对象中：内部类对象初始化时，提供一个外部类对象的引用。
+
+(4)内部类的继承和重写：略。
+
+(5)内部类生成的class文件的命名方式：外部类名$内部类名.class。
+
+(6)内部类的主要应用目的：框架控制，如：事件处理函数。
+
+5.比较老的Java集合：没什么用，基本上都可以被替代。
+
+Vector：矢量，用法类似于List。
+
+BitSet：位集，实际上是由"二进制位"构成的一个Vector。感觉用处不大。
+
+Stack：栈，后入先出。
+
+		Stack st = new Stack();
+		for(int i=1;i<11;i++){
+			st.push(i);
+		}
+		while(!st.empty()){
+			System.out.println(st.pop().toString());
+		}
+		
+Hashtable：散列表。	
+
+6.集合：List列表、Set集、Map映射。
+
+List和Set实现了Collection接口，Map没有实现。
+
+Collections：集合操作工具类。
+
+List：一般用ArrayList、增删多的时候用LinkedList。
+
+Set：一般都用HashSet，增删多的时候用ArraySet(极少)，TreeSet基本不用。Set可以用来去重。
+
+Map：一般用HashMap，增删多的时候用ArrayMap(极少)。
+
+6.异常：
+
+中断与恢复：恢复很难处理，一般适用抛出异常来中断程序。
+
+运行时异常，默认声明。
+
+自定义异常类，继承Exception即可。
+
+7.IO：对于我来说的重点。
+
+输入流：InputStream  从不同的源产生输入流，read()方法。
+输出流：OutputStream   从不同的源产生输出流，write()方法。
+
+输入流的类型：
+
+ByteArrayInputStream：允许内存中的一个缓冲区作为inputstream使用，从中提取字节的缓冲区。
+StringBufferInputStream：将一个String转换成inputstream。
+FileInputStream：用于从文件读取信息。
+PipedInputString：产生为相关的PipedOutputStream写的数据。实现"管道化"的概念。
+SequenceInputStream：将两个或以上的inputstream对象转换成单个inputstream。
+FilterInputStream：封装其他的输入流，并为他们提供其他的功能。
+
+输出流的类型：与输入类似。
+
+ByteArrayOutputStream：
+FileOutputStream：
+PipedOutputStream：
+FilterOutputStream：
+
+FilterInputStream的类型：
+
+DataInputStream、 DataOutputStream：读取基本类型和String数据。
+BufferedInputStream：缓冲流。
+
+FilterOutputStream的类型：
+
+DataOutputStream、DataInputStream：
+BufferedOutputStream：
+
+File类：单一文件或一系列文件。
+
+IO流的典型应用：
+
+
+	/**
+	 * 从缓冲文件流读文件
+	 */
+	public static void function1(){
+		DataInputStream is = null;
+		try {
+			is = new DataInputStream(new BufferedInputStream(new FileInputStream("E:\\1.txt")));
+			String s = ""; //读取的全部结果
+			String temp = "";//一行一行的读取
+			while((temp = is.readLine()) != null){
+				s += temp + "\n";
+			}
+			System.out.println(s);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}finally{
+			if(is != null){
+				try {
+					is.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 从内存中获取输入流
+	 */
+	public static void function2(){
+		String s = "asegfdfgsdhffsghfghdfuilhjlhjkilhjklhjklhjkldsdh";
+		StringBufferInputStream is = new StringBufferInputStream(s);
+		int c = -1;
+		while((c=is.read()) != -1){
+			System.out.print((char)c);
+		}
+	}
+	
+	/**
+	 * 向文件中写数据
+	 */
+	public static void function3(){
+		DataOutputStream out = null;
+		try {
+			out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream("E:\\2.txt")));
+			out.write("小小说".getBytes("UTF-8"));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}finally{
+			if(out != null){
+				try {
+					out.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	
+将字节流inputstream、outputstream转换为字符流Reader、Writer。
+
+Java对压缩文件也有自己的支持：
+
+压缩类的基础类：DeflaterOutputStream
+解压类的基础类：InflaterInputStream
+
+对象序列化：
+
+对实现Serializable接口的对象，可以转换成一系列字节，从而进行网络传输，无视OS的差异。
+
+新的文件读写方式，面向管道，可以双向读写，效率高：
+
+	/**
+	 * 使用NIO从缓冲文件流读文件
+	 */
+	public static void function1(){
+		FileInputStream fis = null;
+		try {
+			fis = new FileInputStream("E:\\1.txt");
+			FileChannel fcis = fis.getChannel();
+			ByteBuffer buffer = ByteBuffer.allocate(1024);
+			int length = -1;
+			while((length = fcis.read(buffer))!=-1){
+				buffer.clear();
+				byte[] bytes = buffer.array();
+				String s = new String(bytes,0,length);
+				System.out.print(s);
+			}
+			fcis.close();
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}finally{
+			if(fis != null){
+				try {
+					fis.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 使用NIO向文件中写数据
+	 */
+	public static void function2(){
+		FileOutputStream fos = null;
+		try {
+			fos = new FileOutputStream("E:\\2.txt");
+			FileChannel fcos = fos.getChannel();
+			ByteBuffer src = Charset.forName("UTF-8").encode("测试要写入的字符串信息");
+			int length = 0;
+			while((length = fcos.write(src)) != 0){
+				System.out.println("写入长度："+length);
+			}
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+
+8.反射：
+
+三种获取类对象的方法：略。
+动态执行方法：略。
+动态设置、获取属性值：略。
+
+9.对象的克隆：深拷贝。
+
+(1)对象所在的类实现Cloneable接口。
+(2)对象所在的类重写clone方法，并修饰为public的。
+
+10.字符串API：略。
+
+11.多线程：
+
+两种多线程的写法：略。
+线程的同步与死锁：略。
+线程的几种状态：略。
+sleep位于Thread类中，wait位于object类中，前者不会释放锁，后者会释放对象锁。
+线程组：一组线程，不推荐使用了，用Executors替代。
+
+12.网络编程：
+
+套接字：抽象的概念，表达的是两台机器之间连接的终端。通过套接字可以拿到基于网络的IO操作流。
+
+TCP与UDP：可靠与不可靠传输，三次握手略。
+
+post与get传输：略。
+
+TCP：
+
+Server：
+
+
+package com.self.tcp;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+/**
+ * TCP服务端
+ */
+public class TcpService {
+	
+	private ServerSocket ss;
+	
+	public static final int port = 10009;
+	
+	public TcpService(){
+		try {
+			ss = new ServerSocket(port);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void setConnection(){
+		Socket s = null;
+		OutputStream os = null;
+		
+		try {
+			s = ss.accept();
+			os = s.getOutputStream();
+			os.write("hello".getBytes("UTF-8"));
+			os.flush();
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}finally{
+			if(os != null){
+				try {
+					os.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			if(s != null){
+				try {
+					s.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	public static void main(String[] args) {
+		TcpService ts = new TcpService();
+		ts.setConnection();
+	}
+}
+
+
+Client：
+
+
+package com.self.tcp;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+public class TcpClient {
+	
+	public static final String IP = "192.168.28.140"; 
+	
+	public static final int port = 10009;
+	
+	private Socket s;
+	
+	public TcpClient(){
+		try {
+			s = new Socket(IP,port);
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void setConnection(){
+		InputStream is;
+		try {
+			is = s.getInputStream();
+			BufferedReader br = new BufferedReader(new InputStreamReader(is));
+			System.out.println(br.readLine());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static void main(String[] args) {
+		TcpClient tc = new TcpClient();
+		tc.setConnection();
+	}
+}
+
+13.代码块计时：用于测试代码块的性能。
+
+long start = System.currentTimeMillis(); 
+
+//测试代码块
+
+long end = System.currentTimeMillis(); 
+long time = end - start;//花费时间
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

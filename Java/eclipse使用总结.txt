@@ -1,0 +1,132 @@
+1.编译和运行环境配置：
+
+(1)指定jdk：
+
+window –> Preferences -> Installed JREs
+
+(2)默认注释：
+
+window – Preferences – Java – Code Style – Code Templates
+
+(3)行号：
+
+左侧空白区域 -> 右键 -> 显示行号。
+
+(4)字体：
+
+window – Preferences – General – Appearance – Colors And Fonts 下属菜单设置字体样式。
+
+(5)重置窗体：
+
+window – Reset Perspective
+
+(6)显示页签：
+
+window -> show view -> console
+
+2.快捷操作：
+
+(1)新建：ctrl + n
+
+(2)快速构建：alt + shift + s
+
+(3)注释：
+
+单行：ctrl + /
+多行注释(取消)：ctrl + shift + / (ctrl + shift + \)
+
+(4)代码上下移动：
+
+alt + 上键，alt + 下键
+
+(5)查看源码：
+
+ctrl + 鼠标点击
+
+(6)查找类：
+
+ctrl + shift + t
+
+(7)查找方法：
+
+ctrl + o
+
+(8)给建议：
+
+ctrl + 1
+
+(9)改名字：
+
+alt + shift + r
+
+3.打包：
+
+右键 -> Export
+
+4.项目：
+
+删除项目：右键 -> delete
+
+导入项目：右键 -> import
+
+5.调试：
+
+(1)基本调试： 
+
+点击代码行号打断点，断点信息在breakpoints中显示。
+
+调试启动：右键 -> Debug As -> Java Application。
+
+(2)远端调试：
+
+右键 -> Debug As -> Debug Configurations -> Remote Java Application
+
+设置项目、IP、端口号。
+
+-> Debug.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
