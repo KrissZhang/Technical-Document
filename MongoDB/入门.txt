@@ -1,0 +1,483 @@
+1.Redis和MongoDb：
+
+都是NoSql数据库，Redis主要用于作热点缓存，MongoDb主要用于在关系型数据库之间搭一座桥，把一部分的表移到MongoDb中来，便于处理。
+
+MongoDb的数据格式较为松散，可以利用这个特性来存储数据，避免关系型数据库中 join 跨表处理，性能低下的问题(NoSql特性)。
+
+典型的存储数据格式，如：
+
+    _id: POST_ID
+	title: TITLE_OF_POST, 
+    description: POST_DESCRIPTION,
+    author: POST_BY,
+    tags: [TAG1, TAG2, TAG3],
+    likes: TOTAL_LIKES, 
+    comments: [{
+        user:'COMMENT_BY',
+        message: TEXT,
+        dateCreated: DATE_TIME,
+    },{
+        user:'COMMENT_BY',
+        message: TEXT,
+        dateCreated: DATE_TIME,
+    }]
+	
+2.基本概念：
+
+SQL术语        MongoDb术语        解释/说明
+database       database           数据库
+table          collection         数据库表/集合
+row            document           数据记录行/文档
+column         field              数据字段/域
+index          index              索引
+table joins                       MongoDb不支持表连接
+primary key    primary key        主键，MongoDb自动将_id字段设置为主键
+
+基本命令：
+
+show dbs    显示所有数据库列表
+db          显示当前数据库对象
+use db      连接到一个指定的数据库
+
+数据库命名规则：不能为空，不能是特殊字符、全部小写、最多64字节。
+
+文档：
+
+(1)文档中的键值是有序的。
+(2)文档中的值可以是任意支持的数据类型。
+(3)MongoDb区分类型和大小写。
+(4)MongoDb文档不能有重复的键。
+(5)文档中的键是任意UTF-8字符串。
+
+文档键命名规范：键不能包含空字符、不能以下划线开头、不能包含 . 和 $ 。
+
+集合：就是文档组，类似于表格的概念，但是没有固定的格式。
+
+集合的命名规则：不能是空或空字符、不能包含保留字、不能以".system."开头。
+
+capped collections：固定大小的collection。
+
+元数据：元数据是一个预留空间，在对数据库或应用程序结构执行修改时，其内容可以由数据库自动更新。元数据是系统中各类数据描述的集合，是执行详细的数据收集和数据分析的主要途径。
+集合命名空间	描述
+dbname.system.namespaces	列出所有名字空间。
+dbname.system.indexes	    列出所有索引。
+dbname.system.profile	    包含数据库概要(profile)信息。
+dbname.system.users	        列出所有可访问数据库的用户。
+dbname.local.sources	    包含复制对端（slave）的服务器信息和状态。
+
+MongoDb数据类型：
+
+String        字符串，必须用UTF-8编码
+Integer       整型
+Boolean       布尔值
+Double        双精度浮点值
+Min/Max keys  将一个值与BSON元素的最低值和最高值对比
+Array         用于数组或列表或多个值存储为一个键
+Timestamp     时间戳
+Object        用于内嵌文档
+Null          用于创建空值
+Symbol        符号。基本等同于字符串，但是一般用于特殊符号类型的语言
+Date          日期时间
+Object ID     对象ID。用于创建文档的ID。
+Binary Data   二进制数据
+Code          代码类型。用于在文档中存储 JavaScript 代码。
+Regular expression        正则表达式类型
+
+Object ID：
+
+类似于唯一主键，可以很快地生成和排序。MongoDb存储文档必须要有一个 _id 键。这个键默认是Object ID类型的。如：var newObject = ObjectId()，转为字符串 newObject.str
+
+字符串：BSON字符串都是UTF-8类型的。
+
+时间戳：主要是在MongoDb内部使用，与普通的日期类型不相关，是一个64位的值。
+
+日期：表示距离1970年1月1日的毫秒数。
+
+如：
+
+//格林尼治时间
+var mydate1 = new Date()
+var mydate2 = ISODate()
+ISODate().toString()
+
+3.链接MongoDb：直接使用GUI连接，不要用命令行。
+
+4.基本操作：
+
+(1)创建数据库：use DATABASE_NAME
+
+(2)删除数据库：db.dropDatabase()
+
+(3)创建集合：db.createCollection(name, options)
+
+name是集合名字，options是选项参数。
+
+capped        布尔        (可选)如果为 true，则创建固定集合。固定集合是指有着固定大小的集合，当达到最大值时，它会自动覆盖最早的文档。当该值为 true 时，必须指定 size 参数。
+autoIndexId   布尔	      (可选)如果为 true，自动在 id 字段创建索引。默认为 false。
+size          数值	      (可选)为固定集合指定一个最大值(以字节计)。如果 capped 为 true，也需要指定该字段。
+max           数值	      (可选)指定固定集合中包含文档的最大数量。
+
+查看集合：show collections。当插入一些文档时会自动创建集合。
+
+(4)删除集合：db.collection.drop()
+
+(5)插入文档：db.COLLECTION_NAME.insert(document)
+
+如：
+db.COLLECTION_NAME.insert({
+	desc : '123',
+	tags : ['1','2','3'] 
+})
+
+查看已经插入的文档：db.col.find()
+
+3.2版本后新增：
+
+insertOne、insertMany
+
+(6)更新文档：update() 和 save() 方法。
+
+update()：
+
+db.collection.update(
+   <query>,
+   <update>,
+   {
+     upsert: <boolean>,
+     multi: <boolean>,
+     writeConcern: <document>
+   }
+)
+
+参数说明：
+query: update的查询条件，类似sql update查询内where后面的。
+update: update的对象和一些更新的操作符（如$,$inc...）等，也可以理解为sql update查询内set后面的。
+upsert: 可选，这个参数的意思是，如果不存在update的记录，是否插入objNew,true为插入，默认是false，不插入。
+multi: 可选，mongodb 默认是false,只更新找到的第一条记录，如果这个参数为true,就把按条件查出来多条记录全部更新。
+writeConcern: 可选，抛出异常的级别。
+
+如：db.col.update({'title':'MongoDB 教程'},{$set:{'title':'MongoDB'}})，将标题 MongoDB 教程 更新为 MongoDB。
+
+3.2版本开始新增了：
+updateOne、updateMany
+
+save()：
+
+db.collection.save(
+   <document>,
+   {
+     writeConcern: <document>
+   }
+)
+
+参数说明：
+document: 文档数据。
+writeConcern: 可选，抛出异常的级别。
+
+(7)删除文档：deleteOne() 和 deleteMany()。
+
+db.inventory.deleteOne({status:"D"})
+
+db.inventory.deleteMany({status:"A"})
+
+(8)查询文档：find()。
+
+db.collection.find(query, projection)
+
+query：可选，使用查询操作符指定查询条件。
+projection：可选，使用投影操作符指定返回的键。查询时返回文档中所有键值，只需省略该参数即可(默认省略)。
+
+pretty()：以格式化的方式来显示所有文档。
+
+如：
+db.collection.find(query, projection).pretty()
+
+MongoDb与RDBMS where 语句比较：
+
+操作        格式                        范例                                         RDBMS中的类似语句
+等于        {<key>:<value>}	            db.col.find({"by":"菜鸟教程"}).pretty()	     where by = '菜鸟教程'
+小于        {<key>:{$lt:<value>}}	    db.col.find({"likes":{$lt:50}}).pretty()	 where likes < 50
+小于或等于  {<key>:{$lte:<value>}}	    db.col.find({"likes":{$lte:50}}).pretty()	 where likes <= 50
+大于        {<key>:{$gt:<value>}}	    db.col.find({"likes":{$gt:50}}).pretty()	 where likes > 50
+大于或等于  {<key>:{$gte:<value>}}	    db.col.find({"likes":{$gte:50}}).pretty()	 where likes >= 50
+不等于      {<key>:{$ne:<value>}}	    db.col.find({"likes":{$ne:50}}).pretty()	 where likes != 50
+
+MongoDb And 条件：MongoDb 的 find() 方法可以传入多个键(key)，每个键(key)以逗号隔开，即常规SQL的AND条件。
+
+如：db.col.find({key1:value1, key2:value2}).pretty()
+
+MongoDb Or 条件：使用关键字 $or 。
+
+如：
+db.col.find(
+   {
+      $or: [
+         {key1: value1}, {key2:value2}
+      ]
+   }
+).pretty()
+
+MongoDb And 和 Or 的联合使用：
+
+如：
+db.coll_test.find({"name":"zp2",$or:[{"value":"value321"},{"value":"value333"}]})
+
+(9)条件操作符：
+
+MongoDB中条件操作符有：
+
+(>) 大于 - $gt
+(<) 小于 - $lt
+(>=) 大于等于 - $gte
+(<= ) 小于等于 - $lte
+
+模糊查询：
+
+包含XXX：
+
+db.coll_test.find({"name":/XXX/}).pretty()
+
+以XXX开头：
+
+db.coll_test.find({"name":/^XXX/}).pretty()
+
+以XXX结尾：
+
+db.coll_test.find({"name":/XXX$/}).pretty()
+
+(10)$type操作符：
+
+$type 操作符是基于BSON类型来检索集合中匹配的数据类型，并返回结果。
+
+MongoDb 中可以使用的类型如下：
+
+类型	数字	备注
+Double	1	 
+String	2	 
+Object	3	 
+Array	4	 
+Binary data	5	 
+Undefined	6	已废弃。
+Object id	7	 
+Boolean	8	 
+Date	9	 
+Null	10	 
+Regular Expression	11	 
+JavaScript	13	 
+Symbol	14	 
+JavaScript (with scope)	15	 
+32-bit integer	16	 
+Timestamp	17	 
+64-bit integer	18	 
+Min key	255	Query with -1.
+Max key	127	 
+
+如：获取 "col" 集合中 title 为 String 的数据。
+
+db.col.find({"title" : {$type : 2}})
+或
+db.col.find({"title" : {$type : 'string'}})
+
+(11)limit() 和 skip() 方法：
+
+limit()：获取指定数目的数据。如果不给参数表示获取全部数据。
+
+如：db.COLLECTION_NAME.find().limit(NUMBER)
+
+skip()：跳过指定数量的数据。
+
+如：db.COLLECTION_NAME.find().limit(NUMBER).skip(NUMBER)
+
+(12)MongoDb 排序：
+
+sort()：
+
+通过sort()方法指定排序字段和排序方式，1为升序，2为降序。
+
+如：db.coll_test.find().sort({order:1}).pretty()
+
+
+注意：skip(), limit(), sort()三个放在一起执行的时候，执行的顺序是先 sort(), 然后是 skip()，最后是显示的 limit()。
+
+(13)MongoDb 索引：
+
+创建索引：db.collection.createIndex(keys, options)。
+
+如：db.col.createIndex({"title":1})，根据字段 title 创建升序索引，-1 表示创建降序索引。
+
+复合索引：db.col.createIndex({"title":1,"description":-1})
+
+options参数：
+
+Parameter                    Type                         Description
+background                   Boolean                      建索引过程会阻塞其它数据库操作，background可指定以后台方式创建索引，即增加 "background" 可选参数。 "background" 默认值为false。
+unique                       Boolean                      建立的索引是否唯一。指定为true创建唯一索引。默认值为false.
+name                         string                       索引的名称。如果未指定，MongoDB的通过连接索引的字段名和排序顺序生成一个索引名称。
+dropDups                     Boolean                      3.0+版本已废弃。在建立唯一索引时是否删除重复记录,指定 true 创建唯一索引。默认值为 false.
+sparse                       Boolean                      对文档中不存在的字段数据不启用索引；这个参数需要特别注意，如果设置为true的话，在索引字段中不会查询出不包含对应字段的文档.。默认值为 false.
+expireAfterSeconds           integer                      指定一个以秒为单位的数值，完成 TTL设定，设定集合的生存时间。
+v                            index version	索引的版本号。默认的索引版本取决于mongod创建索引时运行的版本。
+weights	                     document                     索引权重值，数值在 1 到 99,999 之间，表示该索引相对于其他索引字段的得分权重。
+default_language             string                       对于文本索引，该参数决定了停用词及词干和词器的规则的列表。 默认为英语
+language_override            string                       对于文本索引，该参数指定了包含在文档中的字段名，语言覆盖默认的language，默认值为 language
+
+查看集合索引：db.col.getIndexes()
+
+查看集合索引大小：db.col.totalIndexSize()
+
+删除集合所有索引：db.col.dropIndexes()
+
+删除集合指定索引：db.col.dropIndex("索引名称")
+
+(14)MongoDB 聚合：
+
+MongoDB中聚合主要用于处理数据(如：计算平均值，求和等)，并返回计算后的数据结果，类似于sql中的count(*)。
+
+aggregate()方法：
+
+db.COLLECTION_NAME.aggregate(AGGREGATE_OPERATION)
+
+表达式	                   描述	                                                   实例
+$sum	                   计算总和。	                                           db.mycol.aggregate([{$group : {_id : "$by_user", num_tutorial : {$sum : "$likes"}}}])
+$avg	                   计算平均值	                                           db.mycol.aggregate([{$group : {_id : "$by_user", num_tutorial : {$avg : "$likes"}}}])
+$min	                   获取集合中所有文档对应值得最小值。	                   db.mycol.aggregate([{$group : {_id : "$by_user", num_tutorial : {$min : "$likes"}}}])
+$max	                   获取集合中所有文档对应值得最大值。	                   db.mycol.aggregate([{$group : {_id : "$by_user", num_tutorial : {$max : "$likes"}}}])
+$push	                   在结果文档中插入值到一个数组中。	                       db.mycol.aggregate([{$group : {_id : "$by_user", url : {$push: "$url"}}}])
+$addToSet	               在结果文档中插入值到一个数组中，但不创建副本。	       db.mycol.aggregate([{$group : {_id : "$by_user", url : {$addToSet : "$url"}}}])
+$first	                   根据资源文档的排序获取第一个文档数据。	               db.mycol.aggregate([{$group : {_id : "$by_user", first_url : {$first : "$url"}}}])
+$last	                   根据资源文档的排序获取最后一个文档数据	               db.mycol.aggregate([{$group : {_id : "$by_user", last_url : {$last : "$url"}}}])
+
+如：
+
+db.mycol.aggregate([{$group : {_id : "$by_user", num_tutorial : {$sum : 1}}}])
+等价于
+select by_user as _id, count(*) as num_tutorial from mycol group by by_user
+
+
+管道：类似于Linux中管道的概念，将当前管道的处理结果传递给下一个管道处理。
+
+常用的有：
+
+$project：修改输入文档的结构。可以用来重命名、增加或删除域，也可以用于创建计算结果以及嵌套文档。
+$match：用于过滤数据，只输出符合条件的文档。$match使用MongoDB的标准查询操作。
+$limit：用来限制MongoDB聚合管道返回的文档数。
+$skip：在聚合管道中跳过指定数量的文档，并返回余下的文档。
+$unwind：将文档中的某一个数组类型字段拆分成多条，每条包含数组中的一个值。
+$group：将集合中的文档分组，可用于统计结果。
+$sort：将输入文档排序后输出。
+$geoNear：输出接近某一地理位置的有序文档。
+
+如：先根据条件进行过滤，再分组聚合。
+
+db.articles.aggregate([
+	{
+		$match:{score:{$gt:70,$lte:90}} 
+	},{
+		$group:{_id:null,count:{$sum:1}}
+	}
+]);
+
+5.MongoDB 复制(副本集)：提供了多个服务器之间的冗余备份，保证数据安全性。
+
+副本集原理：两个或两个以上的服务器节点，一主一从或一主多从，主节点负责处理客户端请求，从属节点定期轮询从主节点获取这些操作，然后对副本依次执行。
+
+副本集设置：
+
+(1)关闭服务器。
+(2)mongod --port "PORT" --dbpath "YOUR_DB_DATA_PATH" --replSet "REPLICA_SET_INSTANCE_NAME"，如：mongod --port 27017 --dbpath "D:\set up\mongodb\data" --replSet rs0，启动一个名为 rs0 的实例。用命令：rs.initiate()来启动一个新的副本集。
+(3)用：rs.add(HOST_NAME:PORT) 来添加副本集成员。如：rs.add("mongod1.net:27017")
+
+6.分片：另一种集群方式。处理数据大量增长的问题。
+
+7.备份与恢复：略。
+
+8.监控：使用 mongostat 命令，来监控服务器的性能状态。
+
+9.用Java来处理MongoDb：
+
+在SpringBoot中操作MongoDb：参考代码工程。
+
+pom.xml：
+
+        <!-- mongodb -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
+        </dependency>
+
+		
+application.properties：
+
+# 基本配置
+server.port = 8091
+
+# mongodb配置
+# mongodb://登录用户名:密码@ip地址:端口号/数据库名
+spring.data.mongodb.uri = mongodb://zp:Zp18716331455@localhost:27017/test
+
+
+src：略。
+
+10.Windows GUI工具：
+
+NoSQL Manager for MongoDB。
+
+GUI使用注意：
+
+(1)登录用户应该针对每个数据库单独创建，不然无法通过url连接。
+
+(2)操作表数据：Collections -> Data。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

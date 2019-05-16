@@ -1,0 +1,912 @@
+1.SpringBoot简介：
+
+SpringBoot简化配置，降低开发门槛，提升开发效率。
+
+使用官方STS来创建项目。
+
+2.第一个demo：
+
+使用注解@RestController、@RequestMapping("/test")，请求方法。
+
+返回对象封装为对象ResultObj，包括：
+
+private Integer status;
+private String msg;
+private Object data;
+
+Jackson注解使用：
+
+@JsonIgnore
+private String pwd;      //返回json不显示pwd的属性和值
+
+@JsonFormat(pattern="yyyy-MM-dd hh:mm:ss a",locale="zh",timezone="GMT+8")
+private Date birthday;   //以指定格式显示
+
+@JsonInclude(Include.NON_NULL)
+private String desc;  //为空时不显示
+
+3.热部署：devtools
+
+修改类重启。
+
+4.资源文件属性配置：
+
+引入依赖：
+
+<!-- 配置文件读取 -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-configuration-processor</artifactId>
+    <optional>true</optional>
+</dependency>
+
+添加配置文件sbt.properties：
+
+sbt.author=zp
+
+添加资源类：
+
+package com.self.sbt.resources;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.stereotype.Component;
+
+@Component
+@Configuration
+@ConfigurationProperties(prefix = "sbt")
+@PropertySource(value = "classpath:sbt.properties")
+public class Resource {
+
+    //作者
+    private String author;
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+}
+
+读取资源：
+
+    //资源文件属性
+    @Autowired
+    private Resource resource;
+	
+	/**
+     * 获取配置文件属性
+     * @return 配置属性值
+     */
+    @RequestMapping("/getResource")
+    public String getResource(){
+        //作者
+        String author = resource.getAuthor();
+
+        return "resource author is : " + author;
+    }
+	
+5.服务器配置修改：
+
+application.properties，如：
+
+#端口号
+server.port=8080
+#发生错误时，跳转的url
+#server.error.path=/error
+#session最大超时时间
+server.servlet.session.timeout=30m
+#tomcat编码
+server.tomcat.uri-encoding=UTF-8
+
+6.SpringBoot集成freemarker：
+
+添加依赖：
+
+<!-- freemarker -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-freemarker</artifactId>
+</dependency>
+
+配置freemarker参数：
+
+#freemarker
+spring.freemarker.cache=false
+spring.freemarker.suffix=.html
+spring.freemarker.template-loader-path=classpath:/templates/
+
+使用ModelAndView处理视图：
+
+    /**
+     * 测试freemarker
+     * @return ModelAndView
+     */
+    @RequestMapping("/toUserAdmin")
+    public ModelAndView toUserAdmin(){
+        ModelAndView ModelAndView = new ModelAndView();
+
+        Map<String,String> map = new HashMap<>();
+        map.put("key","value12345");
+
+        ModelAndView.addObject("data",map);
+        ModelAndView.setViewName("user/userAdmin");
+        return ModelAndView;
+    }
+	
+7.SpringBoot全局异常处理：
+
+(1)web页面跳转：
+
+略。
+
+(2)ajax形式：
+
+略。
+
+(3)web页面跳转和ajax兼容：对上述两种捕获追加是否ajax请求的判断：
+
+ajaxError.html：
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <script src="/jquery/jquery-3.3.1.min.js"></script>
+    <script type="application/javascript">
+        function ajax() {
+            $.ajax({
+                url: "/user/ajaxError",
+                type: "POST",
+                dataType: "json",
+                async: false,
+                success: function(data){
+                    alert("success");
+                },
+                error:function (data) {
+                    alert(data.responseJSON.message);
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <!-- 测试ajax请求异常 -->
+    <input type="button" id="id1" name="id1" value="Click" onclick="ajax();" />
+</body>
+</html>
+
+error.html：
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+    <h1>ERROR!!!</h1>
+    <h1>${exception.msg}</h1>
+</body>
+</html>
+
+ClientResult.java：
+
+
+package com.self.sbt.util;
+
+/**
+ * 客户端响应对象
+ */
+public class ClientResult<T> {
+    //是否成功
+    private Boolean isSuccess;
+
+    //响应码
+    private String code;
+
+    //响应信息
+    private String msg;
+
+    //数据对象
+    private T data;
+
+    public ClientResult() {
+        super();
+    }
+
+    public Boolean getSuccess() {
+        return isSuccess;
+    }
+
+    public void setSuccess(Boolean success) {
+        isSuccess = success;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public String getMsg() {
+        return msg;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
+    public T getData() {
+        return data;
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
+
+}
+
+Util.java：
+
+package com.self.sbt.util;
+
+import javax.servlet.http.HttpServletRequest;
+
+/**
+ * 通用工具类
+ */
+public class Util {
+
+    /**
+     * 判断请求是不是ajax请求
+     * @param request 请求
+     * @return 判断结果
+     */
+    public static boolean isAjax(HttpServletRequest request){
+        return (request.getHeader("X-Requested-With") != null
+                && "XMLHttpRequest".equals(request.getHeader("X-Requested-With").toString()));
+    }
+
+}
+
+ExceptionHandle.java：
+
+package com.self.sbt.exception;
+
+import com.self.sbt.util.ClientResult;
+import com.self.sbt.util.Util;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * 全局异常捕获
+ */
+@ControllerAdvice
+public class ExceptionHandle {
+    //错误页视图名
+    private static final String ERROR_VIEW = "error";
+
+    /**
+     * 全局异常捕获处理
+     * @param request 请求
+     * @param response 响应
+     * @param e 异常
+     * @return 异常处理结果
+     */
+    @ExceptionHandler(value = Exception.class)
+    public Object errorHandler(HttpServletRequest request, HttpServletResponse response, Exception e){
+        if(Util.isAjax(request)){
+            ClientResult clientResult = new ClientResult();
+            clientResult.setSuccess(false);
+            clientResult.setCode("500");
+            clientResult.setMsg(e.getMessage());
+
+            return clientResult;
+        }else{
+            ModelAndView modelAndView = new ModelAndView();
+
+            Map<String,String> map = new HashMap<>();
+            map.put("msg",e.getMessage());
+
+            modelAndView.addObject("exception",map);
+            modelAndView.setViewName("error");
+
+            return modelAndView;
+        }
+
+    }
+
+}
+
+UserController.java：
+
+    /**
+     * 测试web异常
+     * @return str
+     */
+    @RequestMapping("/webError")
+    public String webError(){
+        double result = 1 / 0;
+        return "" + result;
+    }
+
+    /**
+     * 测试ajax异常
+     * @return str
+     */
+    @RequestMapping("/ajaxError")
+    public String ajaxError(){
+        double result = 1 / 0;
+        return "";
+    }
+	
+8.SpringBoot整合Mybatis：
+
+(1)使用公司的框架结构比较好，generatorConfig生成map和实体，用pagehelper来分页。
+
+(2)SpringBoot整合持久层事务：
+
+事务的隔离级别一般用default默认。
+事务的传播行为主要用：required(有事务直接用，没有事务添加事务再放入其中运行)，supports(有事务直接用，没有事务则脱离事务直接运行)。
+
+增删改：
+@Transactional(propagation = Propagation.REQUIRED)
+public void test(){
+
+}
+
+查询使用supports即可。
+
+9.SpringBoot整合Redis：
+
+添加依赖：
+
+<!-- redis -->
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-redis</artifactId>
+</dependency>
+
+
+配置缓存服务器：
+
+# Redis数据库索引（默认为0）
+spring.redis.database=0
+# Redis服务器地址
+spring.redis.host=localhost
+# Redis服务器连接端口
+spring.redis.port=6379
+# Redis服务器连接密码（默认为空）
+spring.redis.password=
+# 连接池最大连接数（使用负值表示没有限制）
+spring.redis.jedis.pool.max-active=8
+# 连接池最大阻塞等待时间（使用负值表示没有限制）
+spring.redis.jedis.pool.max-wait=-1
+# 连接池中的最大空闲连接
+spring.redis.jedis.pool.max-idle=8
+# 连接池中的最小空闲连接
+spring.redis.jedis.pool.min-idle=0
+# 连接超时时间（毫秒）
+spring.redis.timeout=1000
+
+
+redis工具类：需要再添加
+
+package com.self.sbt.util;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.stereotype.Component;
+
+/**
+ * Redis工具类
+ */
+@Component
+public class RedisUtil {
+
+    @Autowired
+    private StringRedisTemplate redisTemplate;
+
+    /**
+     * 获取缓存
+     * @param key key
+     * @return 缓存
+     */
+    public Object get(String key){
+        return key == null?null:redisTemplate.opsForValue().get(key);
+    }
+
+    /**
+     * 存入缓存
+     * @param key key
+     * @param value value
+     * @return 存放结果
+     */
+    public boolean set(String key,String value){
+        try{
+            redisTemplate.opsForValue().set(key,value);
+            return true;
+        }catch (Exception e){
+            return false;
+        }
+    }
+
+}
+
+10.SpringBoot整合定时任务：
+
+在启动类上添加注解开启定时任务：
+
+//开启定时任务
+@EnableScheduling
+
+添加定时任务类：使用@Component注入扫描，@Scheduled(fixedRate = 3000)来定义定时执行规则。
+
+package com.self.sbt.ScheduTask;
+
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+/**
+ * 定时任务
+ */
+@Component
+public class ScheduTask {
+
+    /**
+     * 时间格式
+     */
+    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    /**
+     * 每3秒执行一次定时任务
+     */
+    @Scheduled(fixedRate = 3000)
+    //@Scheduled(cron = "")
+    public void reportCurrentTime(){
+        System.out.println("现在时间：" + dateFormat.format(new Date()));
+    }
+
+}
+
+注意：这里可以使用@Scheduled(cron = "")，指定表达式的方式来定义更加复杂的定时逻辑，但是仅(6)位，不支持年。
+表达式地址：http://cron.qqe2.com/
+
+11.SpringBoot异步执行程序：
+
+在启动类上添加注解开启异步任务：
+
+//开启异步调用方法
+@EnableAsync
+
+添加异步任务类：使用@Component注入扫描，@Async标识任务为异步执行，如果要判断任务是否执行结束则返回Future<Boolean>来判断。
+
+package com.self.sbt.task;
+
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.stereotype.Component;
+
+import java.util.concurrent.Future;
+
+/**
+ * 异步任务
+ */
+@Component
+public class AsyncTask {
+
+    @Async
+    public Future<Boolean> doTask1() throws InterruptedException {
+        Thread.sleep(1000);
+        return new AsyncResult<>(true);
+    }
+
+    @Async
+    public Future<Boolean> doTask2() throws InterruptedException {
+        Thread.sleep(800);
+        return new AsyncResult<>(true);
+    }
+
+}
+
+controller执行方法可以这样写：
+
+    /**
+     * 测试异步任务
+     * @return 消耗时间
+     */
+    @RequestMapping("/testAsyncTask")
+    public String testAsyncTask() throws InterruptedException {
+        long start = System.currentTimeMillis();
+
+        Future<Boolean> one = asyncTask.doTask1();
+        Future<Boolean> two = asyncTask.doTask2();
+
+        while (!one.isDone() || !two.isDone()){
+            if(one.isDone() && two.isDone()){
+                break;
+            }
+        }
+
+        long end = System.currentTimeMillis();
+
+        return "消耗了：" + (end-start) + "毫秒";
+    }
+	
+12.SpringBoot拦截器使用：
+
+定义WebMvcConfigurer类继承WebMvcConfigurationSupport，并用@Configuration修饰，实现addCorsMappings(跨域)、addInterceptors(添加自定义拦截器)
+
+package com.self.sbt.interceptor;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
+
+/**
+ * 拦截配置
+ */
+@Configuration
+public class WebMvcConfigurer extends WebMvcConfigurationSupport {
+
+    /**
+     * 添加自定义拦截器
+     * @param registry registry
+     */
+    @Override
+    protected void addInterceptors(InterceptorRegistry registry) {
+        //按照拦截器的声明顺序执行(表达式指向请求方法的url，* 和 ** 代表全部)
+        registry.addInterceptor(new TestInterceptor1()).addPathPatterns("/user/**");
+
+        registry.addInterceptor(new TestInterceptor2()).addPathPatterns("/*/getResource")
+                                                       .addPathPatterns("/*/toUserAdmin");
+
+        super.addInterceptors(registry);
+    }
+
+    /**
+     * 跨域拦截
+     * @param registry registry
+     */
+    @Override
+    protected void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**")
+                .allowedOrigins("*")
+                .allowCredentials(true)
+                .allowedMethods("*")
+                .allowedHeaders("*")
+                .maxAge(3600);
+    }
+
+}
+
+自定义n个拦截器，实现HandlerInterceptor接口，重写对应方法，方法返回true表示放行，返回false表示拦截：
+
+package com.self.sbt.interceptor;
+
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+/**
+ * 拦截器1
+ */
+public class TestInterceptor1 implements HandlerInterceptor {
+
+    /**
+     * 请求处理前执行
+     * @param request 请求
+     * @param response 响应
+     * @param handler handler
+     * @return boolean (true--放行，false--拦截)
+     * @throws Exception 异常
+     */
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("执行拦截方法1后放行");
+        return true;
+    }
+
+    /**
+     * 请求处理后视图渲染前执行
+     * @param request 请求
+     * @param response 响应
+     * @param handler handler
+     * @param modelAndView modelAndView
+     * @throws Exception 异常
+     */
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+
+    }
+
+    /**
+     * 请求结束后执行
+     * @param request 请求
+     * @param response 响应
+     * @param handler handler
+     * @param ex 异常
+     * @throws Exception 异常
+     */
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+
+    }
+
+}
+
+
+package com.self.sbt.interceptor;
+
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.ModelAndView;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+/**
+ * 拦截器2
+ */
+public class TestInterceptor2 implements HandlerInterceptor {
+
+    /**
+     * 请求处理前执行
+     * @param request 请求
+     * @param response 响应
+     * @param handler handler
+     * @return boolean (true--放行，false--拦截)
+     * @throws Exception 异常
+     */
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("执行拦截方法2后放行");
+        return true;
+    }
+
+    /**
+     * 请求处理后视图渲染前执行
+     * @param request 请求
+     * @param response 响应
+     * @param handler handler
+     * @param modelAndView modelAndView
+     * @throws Exception 异常
+     */
+    @Override
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+
+    }
+
+    /**
+     * 请求结束后执行
+     * @param request 请求
+     * @param response 响应
+     * @param handler handler
+     * @param ex 异常
+     * @throws Exception 异常
+     */
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+
+    }
+
+}
+
+13.容器启动后执行代码：
+
+在启动类上实现ApplicationRunner接口，重写run方法，在run方法的实现中添加代码。
+
+package com.self.sbt;
+
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
+
+@SpringBootApplication
+@MapperScan("com.self.sbt.dao")
+//开启定时任务
+@EnableScheduling
+//开启异步调用方法
+@EnableAsync
+public class SbtApplication implements ApplicationRunner {
+
+    public static void main(String[] args) {
+        SpringApplication.run(SbtApplication.class, args);
+    }
+
+    /**
+     * 加载方法
+     * @param args args
+     * @throws Exception Exception
+     */
+    @Override
+    public void run(ApplicationArguments args) throws Exception {
+        System.out.println("启动成功");
+    }
+
+}
+
+14.I18n中英文：
+
+(1)在resources中添加language文件夹，添加en.properties、zh.properties文件，分别存数字和中英文对应的文本信息。
+
+(2)添加中英文操作类，在项目启动时设置语言标识，在使用时通过静态get方法，取到数字对应的文本信息。
+
+工具类如下：
+
+package com.meiman.meimanwallet.i18n;
+
+import com.meiman.meimanwallet.constant.ErrorCodeMsg;
+import com.meiman.meimanwallet.exception.WalletException;
+import com.meiman.meimanwallet.utils.ConfigLoader;
+import com.meiman.meimanwallet.utils.StringUtils;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+/**
+ * 语言配置
+ * @author zeng_cc
+ *
+ */
+public class I18nUtils {
+
+    /**
+     * 语言数据
+     */
+    private static final Map<String, Properties> ALL_MAPPING = new HashMap<>();
+
+    /**
+     * 系统当前已选择语言包
+     */
+    private static Properties nowMapping = new Properties();
+
+    /**
+     * 默认语言设置为英文
+     */
+    private static String key = "zh";
+
+    /**
+     * 默认语言包存放文件夹名称
+     */
+    private static final String FOLDER = "languages";
+
+    /**
+     * 初始化，加载所有语言包
+     */
+    static {
+        try {
+            Properties properties = ConfigLoader.loadProperties("languages/en.properties");
+            ALL_MAPPING.put("en", properties);
+            properties = ConfigLoader.loadProperties("languages/zh.properties");
+            ALL_MAPPING.put("zh", properties);
+        } catch (IOException e) {
+            System.out.println("加载语言配置文件错误");
+        }
+    }
+
+
+    public static void setLanguage(String lang) throws WalletException {
+        if (StringUtils.isBlank(lang)) {
+            throw new WalletException(ErrorCodeMsg.LANGUAGE_CANNOT_SET_NULL);
+        }
+        key = lang;
+        nowMapping = ALL_MAPPING.get(lang);
+    }
+
+    /**
+     * 根据系统当前语言，获取语言包
+     * @param id
+     * @return
+     */
+    public static String get(String id) {
+        if (nowMapping == null) {
+            nowMapping = ALL_MAPPING.get(key);
+        }
+        return nowMapping.getProperty(id + "");
+    }
+}
+
+15.设置项目首页：
+
+在配置的拦截器类WebMvcConfigurer中重写addViewControllers，设置首页和优先级。
+
+    /**
+     * 设置首页
+     * @param registry registry
+     */
+    @Override
+    protected void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/").setViewName("index");
+        registry.setOrder(Ordered.HIGHEST_PRECEDENCE);
+
+        super.addViewControllers(registry);
+    }
+	
+16.使用静态资源：
+
+拦截器默认会拦截静态资源，所以这里需要指定静态资源不被拦截。
+
+拦截器WebMvcConfigurer，实现addResourceHandlers方法：
+
+    /**
+     * 排除静态资源
+     * @param registry registry
+     */
+    @Override
+    protected void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/");
+    }
+	
+请求资源：
+
+    <script type="application/javascript" src="static/jquery/jquery-3.3.1.min.js"></script>
+    <script type="application/javascript">
+        $(document).ready(function () {
+            alert('12345');
+        });
+    </script>
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

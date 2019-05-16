@@ -1,0 +1,125 @@
+1.WebService是什么？
+
+webservice就是远程调用技术，也叫XML Web Service WebService，是一种可以接收从Internet或者Intranet上的其它系统中传递过来的请求，轻量级的独立的通讯技术。通过SOAP在Web上提供的软件服务，使用WSDL文件进行说明，并通过UDDI进行注册。
+
+UDDI：是一套基于Web的、分布式的、为Web Service提供的、信息注册中心的 实现标准规范，同时也包含一组使企业能将自身提供的Web Service注册，以使别的企业能够发现的访问协议的实现标准。(一套规则，方便使用)
+
+WSDL：就是用机器能阅读的方式提供的一个正式描述文档，基于XML的语言，用于描述Web Service及其函数、参数和返回值。(人和机器都能阅读的使用规则)
+
+SOAP协议：基于Http和XML的简单对象访问协议。(用于交换XML)
+
+2.WebService服务实现核心原理：
+
+使用 wsimport 命令，将wsdl文档转换成本地代码，与远程服务进行Http通信。
+
+3.SpringBoot集成webservice简单实现：参考项目工程。
+
+(1)添加依赖：
+
+        <!-- webservice -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web-services</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-spring-boot-starter-jaxrs</artifactId>
+            <version>3.2.4</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-frontend-jaxws</artifactId>
+            <version>3.2.5</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.xml.ws</groupId>
+            <artifactId>jaxws-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.cxf</groupId>
+            <artifactId>cxf-rt-transports-http</artifactId>
+            <version>3.1.6</version>
+        </dependency>
+
+(2)服务端编写 配置类、服务接口、服务实现：略。
+
+(3)启动服务，访问：http://localhost:项目端口/CXFServlet注册地址，打开 WebService的 Restful Service 页面。
+
+(4)点击服务接口连接，显示wsdl文档，连接地址为 wsdl 地址。
+
+(5)在客户端生成本地代码：
+
+Idea：
+
+项目 -> webservices -> Generate Java Code From Wsdl 
+
+填写信息如截图所示
+
+(6)编写客户端请求代码：
+
+        WebServiceService_Service webServiceService_Service = new WebServiceService_Service();
+        WebServiceService webServiceService = webServiceService_Service.getWebServiceServiceImplPort();
+
+        String result = webServiceService.test("1234567890");
+
+        System.out.println("result:" + result);
+		
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,39 @@
+Java各种对象的概念说明：
+
+PO：Persistant Object，持久对象，和数据库中的表对应，可以理解为：一个PO对象相当于数据库中的一条数据。(bean，entity)
+
+BO：Business Object，业务对象，就是业务逻辑层。(service、manager、business)
+
+VO：Value Object，仅仅包含数据，视图对象，把整个页面所需的属性封装成一个对象返回给前端。
+
+DTO：Data Transfer Object，简单的说是一种转换器的作用，将PO转换成DTO，返回客户端显示，此时DTO就相当于是一个VO的作用。DTO是对象传递过程中的概念。
+
+POJO：简单对象，身份随着使用场景而变化。
+
+DAO：数据访问对象，用来封装对数据库的访问。将POJO转换成PO，再进行传递。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

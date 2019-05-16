@@ -1,0 +1,79 @@
+1.Git安装：
+
+下载window git
+- Msysgit https://git-scm.com/download/win
+
+配置用户信息：
+git config --global user.name "zp"
+git config --global user.email "273629304@qq.com"
+
+GUI工具：sourcetree
+
+2.创建仓库：在命令行界面使用类似Linux中的命令。
+
+Git仓库：
+
+初始化版本库：
+- git init
+
+添加文件到版本库：
+- git add 文件名
+- git commit -m "提交描述"
+
+查看仓库状态：
+- git status
+
+3.Git工作流：
+
+add 工作区到暂存区
+commit 暂存区到本地仓库
+reset HEAD 将本地仓库中的状态回退到暂存区的某个状态，工作区不改变
+checkout 将工作区恢复到暂存区的状态
+rm cache 删除工作区中的文件
+checkout HEAD 用本地仓库中的文件替换暂存区和工作区的文件
+
+4.远程仓库：
+
+创建SSH key：
+ssh-keygen -t rsa -C "273629304@qq.com"
+
+- git push
+
+5.克隆仓库：复制一个副本到本地。
+
+- git clone
+
+6.标签管理：给某个版本加一个名字方便回滚。
+
+查看所有标签：git tag
+创建标签：git tag name
+指定提交信息：git tag -a name -m "comment"
+删除标签：git tag -d name
+标签发布：git push origin name
+
+在Idea中，Version Control -> Log -> New Tag，然后push -> 勾选Push Tags。
+
+7.分支管理：
+
+使用Idea操作分支：
+
+(1)New Branch：创建新的分支
+(2)在新的分支上修改代码
+(3)切回到主分支
+(4)选择新的分支 -> Merge into Current
+(5)push到远程
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

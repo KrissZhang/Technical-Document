@@ -1,0 +1,152 @@
+1.进程与线程：
+
+进程：程序(任务)的执行过程，持有资源(共享内存，共享文件)和线程。
+
+线程：是系统中最小的执行单元。同一个进程中可以有多个线程，线程共享进程的资源。
+
+线程的交互：包括互斥、同步。
+
+2.Java对线程的支持：
+
+java.lang：
+
+Thread类：
+
+Runnable接口：
+
+其中都包含的 run() 方法，提供了实际工作执行的代码。
+
+Thread常用方法：
+
+类别    方法签名    简介
+
+线程的创建    Thread()
+			  Thread(String name)
+			  Thread(Runnable target)
+			  Thread(Runnable target,String name)
+			  
+线程的方法    void start()                                 启动线程
+              static void sleep(long millis)               线程休眠
+			  static void sleep(long millis,int nanos)     
+			  void join()                               ->
+			  void join(long millis)                    -> 使其他线程等待当前线程终止 
+			  void join(long millis,int nanos)          ->
+
+			  static void yield()                          当前运行线程释放处理器资源
+			  static Thread currentThread()                返回当前运行的线程引用
+			  
+线程创建的两种方式：
+
+(1)继承Thread类，重写 run() 方法，类对象调用 start() 方法。
+
+public class Thread1 extends Thread {
+    @Override
+    public void run() {
+        System.out.println(getName() + "：执行！！！");
+    }
+}
+
+Thread1 t1 = new Thread1();
+t1.setName("t1");
+t1.start();
+
+(2)实现Runnable接口，重写 run() 方法，创建Thread对象，参数指向Runnable实现类，Thread对象调用 start() 方法。
+
+public class Thread2 implements Runnable {
+    @Override
+    public void run() {
+        System.out.println(Thread.currentThread().getName() + "：执行！！！");
+    }
+}
+
+Thread t2 = new Thread(new Thread2(),"t2");
+t2.start();
+
+volatile关键字：实现线程之间的可见性编程。
+
+3.Java线程的正确停止：
+
+不要使用线程的stop()方法，这个方法会使线程突然停止，而不知道做了哪些工作。
+
+应该使用退出标识来停止线程，如：从属于线程的布尔值keepRunning。
+
+interrupt()方法不能用来停止线程。
+
+4.线程的交互：
+
+争用条件：
+
+当多个线程同时共享访问同一数据(内存区域)时，每个线程都尝试操作该数据，从而导致数据被破坏(corrupted)，这种现象称为争用条件。
+
+互斥：
+
+同一时间只能有一条线程对数据临界区进行操作。
+
+互斥的实现：加锁互斥。
+
+synchronized (intrinsic lock){
+	
+}
+
+同步：
+
+一种通信机制，告诉其他线程当前线程的任务已经执行结束。
+
+同步的实现：线程唤醒。
+
+wait()、notify()、notifyAll()。  -- Object 对象成员函数。
+
+wait() 使线程进入等待的集合(锁对象的wait set)，其他线程有机会进入数据临界区。
+
+notifyAll() 唤醒所有等待的线程。
+
+notify() 唤醒一条wait set中的线程(算法实现，随机，不能控制的)。
+
+5.扩展建议：
+
+(1)学习JMM(Java Memory Mode)模型。包括：synchronized、volatile、final。
+
+(2)Locks和Condition。是Java锁机制的高层实现，java.util.concurrent.locks。
+
+(3)线程的安全性：原子性和可见性。java.util.concurrent.atomic、synchronized、volatile、DeadLocks。
+
+(4)多线程常用交互模型：生产者消费者模型、读写锁模型、Future模型、Worker Thread模型。
+
+(5)java5中引入的并发编程工具：java.util.concurrent、线程池ExecutorService、Callable & Future、BlockingQueue。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

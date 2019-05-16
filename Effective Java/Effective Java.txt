@@ -1,0 +1,968 @@
+一、创建和销毁对象：
+
+1.考虑用静态工厂方法替代构造器：静态工厂和公有构造器各有优势，但一般情况下静态工厂更合适。
+
+好处：
+(1)有名称，更易描述方法功能。
+
+(2)不必每次调用时都创建一个对象。(如：单例)
+
+package com.self.test;
+
+/**
+ * 单例类
+ */
+public class Singleton {
+
+    private static Singleton singleton = null;
+
+    private Singleton(){
+
+    }
+
+    public static Singleton getInstance(){
+        if(singleton == null){
+            singleton = new Singleton();
+        }
+
+        return singleton;
+    }
+
+}
+
+(3)可以返回原类型的任何子类型对象。
+(4)创建参数化类型实例时代码更加简洁。
+
+静态工厂方法的常用名称：
+
+valueOf：返回的实例和参数是相同的值，实际上是类型转换方法。
+
+of：valueOf的一种更为简洁的替代。
+
+getInstance：返回的实例通过方法参数来描述。如果没有参数，一般是指单例。
+
+newInstance：确保返回的每个实例与所有其他实例不同。
+
+getType：与getInstance类似，在工厂方法处于不同的类中的时候使用，Type表示工厂方法所返回的对象类型。
+
+newType：与newInstance类似，在工厂方法处于不同的类中的时候使用，Type表示工厂方法所返回的对象类型。
+
+2.遇到多个构造器参数时要考虑用构造器：
+
+可以处理创建对象时一部分参数需要传递，另一部分参数自动填充的场景。
+
+好处：
+可以很方便地应对字段变更的场景，
+
+package com.self.test;
+
+/**
+ * 学生类演示构造器
+ */
+public class Student {
+
+    private Integer id;
+
+    private String name;
+
+    private Integer age;
+
+    private Integer score;
+
+    public Student() {
+
+    }
+
+    /**
+     * 使用构造器初始化
+     * @param builder 构造器
+     */
+    private Student(Builder builder){
+        this.id = builder.id;
+        this.name = builder.name;
+        this.age = builder.age;
+        this.score = builder.score;
+    }
+
+    /**
+     * 构造器
+     */
+    public static class Builder{
+        //设置为默认值的属性
+        private Integer id = null;
+
+        private String name;
+
+        private Integer age;
+
+        private Integer score;
+
+        /**
+         * 构造初始化
+         * @param name name
+         * @param age age
+         */
+        public Builder(String name,Integer age){
+            this.name = name;
+            this.age = age;
+        }
+
+        /**
+         * 追加设置的值
+         * @param score score
+         * @return 返回构造器
+         */
+        public Builder setScore(Integer score){
+            this.score = score;
+            return this;
+        }
+
+        /**
+         * 执行构造
+         * @return 实体对象
+         */
+        public Student build(){
+            return new Student(this);
+        }
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public Integer getAge() {
+        return age;
+    }
+
+    public void setAge(Integer age) {
+        this.age = age;
+    }
+
+    public Integer getScore() {
+        return score;
+    }
+
+    public void setScore(Integer score) {
+        this.score = score;
+    }
+
+}
+
+
+Student s = new Student.Builder("李四",18).setScore(99).build();
+
+3.用私有构造器或者枚举类型强化单例属性。
+
+如：单例中把构造器设置为私有。
+
+4.通过私有构造器强化不可实例化的能力：和上述用法类似。
+
+5.避免创建不必要的对象：
+
+(1)有的时候可以将对象的创建放到类从属的静态方法中，减少对象创建的次数。
+
+(2)优先使用基本类型，避免无意识的自动装箱。
+
+(3)小对象的消耗非常小，如果可以使代码结构清晰是可以使用的。
+
+(4)不要自己维护对象池，除非是像数据库连接池一样重要的对象。
+
+6.消除过期的对象引用：
+
+Java这种有自动垃圾回收机制的语言，也是可能造成内存泄漏的。对于这样隐蔽的内存泄漏，清空过期引用应该是一种特例行为而不应该是一种规范。
+
+缓存、监听器和其他回调都是有可能造成内存泄漏的。这时候就要具体问题具体分析了。
+
+7.避免使用终结方法：finalizer。
+
+
+二、对于所有对象都通用的方法：
+
+8.覆盖equals时请遵守通用约定：
+
+equals方法的目标：
+
+类的每个实例本质上都是唯一的。
+不关心类是否提供了"逻辑相等"的测试功能。
+超类已经覆盖了equals，从超类继承过来的行为对子类也是合适的。
+类是私有的或者包级私有的，可以确定它的equals方法永远不会被调用。
+
+覆盖要求：
+自反性：x非null，x.equals(x)必须返回true。
+对称性：x非null，x.equals(y)为true，那么y.equals(x)也为true。
+传递性：x、y、z非null，x.equals(y)为true，y.equals(z)为true，那么x.equals(z)也为true。
+一致性：x、y非null，多次调用x.equals(y)，则会一致地返回true或false。
+对于任何非null的值，x.equals(null)必须返回false。
+
+所以在覆盖时一定要注意：
+使用==检查参数是否为这个对象的引用。
+使用instanceof检查参数是否为正确的类型。
+把参数转换为正确的类型。
+检查参数中的域是否和对象中对应的域相匹配。
+
+不要让equals方法过于智能。
+不要将equals声明中的Object对象替换为其他类型。
+
+9.覆盖equals时总要覆盖hashCode。
+
+10.始终要覆盖toString()方法。
+
+11.谨慎地覆盖clone()方法：
+
+浅拷贝：
+
+(1)实现 Cloneable 接口：
+
+public class Student implements Cloneable {
+
+}
+
+(2)重写 clone() 方法：
+
+    /**
+     * 浅拷贝
+     * @return 浅拷贝对象
+     * @throws CloneNotSupportedException
+     */
+    @Override
+    protected Student clone() throws CloneNotSupportedException {
+        Student sc = null;
+        try{
+            sc = (Student) super.clone();
+        }catch (CloneNotSupportedException e){
+            System.out.println(e.getMessage());
+        }
+
+        return sc;
+    }
+	
+深拷贝：
+
+(1)克隆对象和下级所属对象都实现 Serializable 接口：
+
+public class Student implements Serializable {
+	
+	private static final long serialVersionUID = 120533068112472641L;
+	
+}
+
+(2)采用序列化的方式来深拷贝对象：
+
+    /**
+     * 深拷贝
+     * @return 深拷贝对象
+     */
+    public Student deepCopy() {
+        Student s = null;
+
+        try {
+            //先写入流
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(this);
+
+            //从流中读取
+            ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            s = (Student) ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return s;
+    }
+	
+12.考虑实现Comparable接口：
+
+实现 Comparable 接口，重写 compareTo() 方法，以比较对象，进行排序。
+
+public class Student implements Comparable {
+
+	/**
+     * 对象间比较
+     * @param o 对比对象
+     * @return 比较结果
+     */
+    @Override
+    public int compareTo(Object o) {
+        Student so = (Student) o;
+        if(this.getScore() < so.getScore()){
+            return -1;
+        }else if(this.getScore() > so.getScore()){
+            return 1;
+        }else{
+            return 0;
+        }
+    }
+
+}
+
+(2)可以通过数组 sort() 方法进行排序：(这里是从小到大)
+
+Student s1 = new Student.Builder("zhangsan1",20).setScore(50).build();
+Student s2 = new Student.Builder("zhangsan2",20).setScore(99).build();
+Student s3 = new Student.Builder("zhangsan3",20).setScore(49).build();
+List<Student> list = new ArrayList<>();
+list.add(s1);
+list.add(s2);
+list.add(s3);
+Collections.sort(list);
+
+三、类和接口：
+
+13.使类和成员的可访问性最小化：
+
+private、protected 修饰等。
+
+14.在公有类中使用访问方法而非公有域：
+
+如：getter 和 setter。
+
+15.使可变性最小化：
+
+根据不可变类创建实例对象在整个生命周期内状态不改变。
+
+(1)不提供任何修改对象状态的方法。
+(2)保证类不会被扩展。
+(3)使所有的域都是final的。
+(4)使所有的域都成为私有的。
+(5)确保对于任何可变组件的互斥访问：如果类具有指向可变对象的域，则必须确保该类的客户端无法获得指向这些对象的引用。
+
+如：不可变复数类
+
+package com.self.test;
+
+/**
+ * 不可变复数类
+ */
+public final class Complex {
+
+    private final double re;
+
+    private final double im;
+
+    public Complex(double re,double im){
+        this.re = re;
+        this.im = im;
+    }
+
+    /**
+     * 复数加法
+     * @param c 加数
+     * @return 结果
+     */
+    public Complex add(Complex c){
+        return new Complex(this.re + c.re,this.im + c.im);
+    }
+
+    /**
+     * 复数减法
+     * @param c 减数
+     * @return 结果
+     */
+    public Complex subtract(Complex c){
+        return new Complex(this.re - c.re,this.im - c.im);
+    }
+
+    @Override
+    public String toString() {
+        return "Complex{" +
+                "re=" + re +
+                ", im=" + im +
+                '}';
+    }
+
+    public double getRe() {
+        return re;
+    }
+
+    public double getIm() {
+        return im;
+    }
+
+}
+
+16.组合优先于继承。
+
+17.要么为继承而设计，并提供文档说明，要么就禁止继承。
+
+我的理解，谨慎选择采用继承的方式。
+
+18.接口优于抽象类。
+
+19.接口只用于定义类型：
+
+常量接口模式是对接口的不良使用，如：
+
+public interface Constant{
+	String HTTP = "http://";
+}
+
+直接定义常量类来替换这种使用方法。
+
+20.类层次优于标签类：
+
+很少使用到标签类的写法了，这里的意思是使用子类继承父类的方式来替代标签类。
+
+21.用函数对象表示策略：
+
+用传对象的方式实现传一段代码来执行的能力，1.8 以后 jdk 已经通过表达式和流支持了，不需要再用这种方法。
+
+22.优先考虑静态成员类：
+
+共有四种不同的嵌套类，每一种都有自己的用途。
+
+(1)如果一个嵌套类需要在单个方法之外仍然可见的，或者它太长了，不适合于放在方法内部，就应该使用成员类。
+
+(2)如果成员类的每个示例都需要一个指向外围实例的引用，就要把成员类做成非静态的；否则，就做成静态的。
+
+(3)假设这个嵌套类属于一个方法的内部，如果你只需要在一个地方创建实例，并且已经有了一个预置的类型可以说明这个类的特征，就要把它做成匿名类。否则，就做成局部类。
+
+静态嵌套类：
+
+Outter.Inner inner = new Outter.Inner();
+inner.print();
+
+非静态嵌套类：
+
+Outter o = new Outter();
+Outter.Inner i = o.new Inner();
+
+四、泛型：
+
+23.请不要使用原生态类型：
+
+如，使用List<String>、List<Object>，而不要使用List。
+
+有两个例外的地方必须使用原生态类型：
+
+(1)List.class
+
+(2)if(set instanceof Set){}
+
+24.消除非受检警告：
+
+检查泛型类别转换，如果实在不能消除泛型警告且可以保证类型正确，可以使用 @SuppressWarnings("unchecked") 。
+
+25.列表优先于数组：
+
+用 List 而不要使用 数组。
+
+26.优先考虑泛型：
+
+声明类时，优先考虑将类型声明为泛型，以达到通用的目的。
+
+27.优先考虑泛型方法：
+
+声明方法时，优先考虑将类型声明为泛型，以达到通用的目的。
+
+如：
+
+package com.self.test;
+
+import java.util.Arrays;
+import java.util.List;
+
+public class Generics<T> {
+
+    private List<T> list;
+
+    public void init(T...paramArr){
+        list = Arrays.asList(paramArr);
+    }
+
+    public List<T> getList(){
+        return list;
+    }
+
+    public T get(int i){
+        return list.get(i);
+    }
+
+}
+
+28.利用有限制通配符来提升API的灵活性：
+
+<? extends T>  表示 T 的子类型。
+<? super T>    表示 T 的超类型。
+
+如：
+
+package com.self.test;
+
+import java.util.Collection;
+
+public class Generics<T> {
+
+    public void show(Collection<? extends T> colls){
+        for (Object obj : colls) {
+            System.out.println(obj.toString());
+        }
+    }
+
+}
+
+测试类：
+public static void main(String[] args) {
+    List<Integer> list = new ArrayList<>();
+    list.add(1);
+    list.add(2);
+    list.add(3);
+
+    new Generics<Number>().show(list);
+
+    System.out.println("------");
+
+    List<Double> list2 = new ArrayList<>();
+    list2.add(1.1);
+    list2.add(2.2);
+    list2.add(3.3);
+
+    new Generics<Number>().show(list2);
+
+    System.out.println("------");
+
+    Set<Double> set = new HashSet<>();
+    set.add(99.1);
+    set.add(99.2);
+    set.add(99.3);
+
+    new Generics<Number>().show(set);
+}
+
+29.优先考虑类型安全的异构容器：不明白。
+
+
+五、枚举和注解：
+
+30.用enum代替int常量：
+
+每当需要一组固定常量的时候，就应该使用枚举。
+
+31.用实例域代替序数：
+
+如：
+
+package com.self.test;
+
+/**
+ * 数字枚举
+ */
+public enum IntNumb {
+    /**
+     * 数字1
+     */
+    ONE(1),
+
+    /**
+     * 数字2
+     */
+    TWO(2),
+
+    /**
+     * 数字3
+     */
+    THREE(3);
+
+    /**
+     * 数值
+     */
+    private final Integer number;
+
+    IntNumb(Integer number) {
+        this.number = number;
+    }
+
+    public Integer getNumber() {
+        return number;
+    }
+
+}
+
+32.用EnumSet代替位域：
+
+现在已经没有位域的使用方法了，略。
+
+33.用EnumMap代替序数索引：
+
+EnumSet 和 EnumMap 在效率上比 Set 和 Map 高，如果能够确定其中的值，就应该考虑使用这两种类型来代替。
+
+如：
+
+EnumSet<IntNumb> enumSet = EnumSet.noneOf(IntNumb.class);
+enumSet.add(IntNumb.THREE);
+enumSet.add(IntNumb.TWO);
+System.out.println(enumSet.toString());
+
+System.out.println("------");
+
+EnumMap<IntNumb,Object> enumMap = new EnumMap<>(IntNumb.class);
+enumMap.put(IntNumb.ONE,"1");
+enumMap.put(IntNumb.TWO,"2");
+enumMap.put(IntNumb.THREE,"3");
+System.out.println(enumMap.toString());
+
+34.用接口模拟可伸缩的枚举：
+
+如：枚举模拟四则运算，
+
+package com.self.test;
+
+/**
+ * 四则运算
+ */
+public enum BasicOperation implements Operation {
+    /**
+     * 加
+     */
+    PLUS("+"){
+        @Override
+        public double apply(double x, double y) {
+            return x + y;
+        }
+    },
+    /**
+     * 减
+     */
+    MINUS("-"){
+        @Override
+        public double apply(double x, double y) {
+            return x - y;
+        }
+    },
+    /**
+     * 乘
+     */
+    TIMES("*"){
+        @Override
+        public double apply(double x, double y) {
+            return x * y;
+        }
+    },
+    /**
+     * 除
+     */
+    DIVIDE("/"){
+        @Override
+        public double apply(double x, double y) {
+            return x / y;
+        }
+    };
+
+    private final String symbol;
+
+    BasicOperation(String symbol){
+        this.symbol = symbol;
+    }
+}
+
+interface Operation {
+    double apply(double x,double y);
+}
+
+测试方法：
+
+double result = BasicOperation.PLUS.apply(1,2);
+
+35.注解优先于命名模式：
+
+使用注解来规范行为，如，JUnit中 @Test 替代 test 前后缀方法名。
+
+36.一定要显式声明Override注解：
+
+37.用标记接口定义类型：
+
+这一条是说标记接口和标记注解的选择，
+
+如果标记是应用到程序元素而不是类或者接口，就必须用注解。
+如果标记只应用给类和接口，那么就标记接口优先于标记注解。
+如果要定义一个任何新方法都不会与之关联的类型，标记接口是最好的选择。
+如果想要标记程序元素而非类和接口，考虑到未来可能要给标记添加更多的信息忙活着标记更适合于已经广泛使用了注解类型的框架，那么就该使用标记注解。
+
+六、方法：
+
+38.检查参数的有效性：
+
+编写方法时，应该在方法开头校验参数是否正确(如：是否为空，参数范围等)，并且在文档中详细标识出传入参数的规范。
+
+39.必要时进行保护性拷贝：
+
+传入类中的参数对象，应当考虑传入之后是否允许对象状态被修改，如果不允许，那么就传入参数对象的副本。
+
+40.谨慎设计方法签名：
+
+(1)仔细设计方法名。
+(2)方法不要过多，仅当某个功能需要被用到时，才提供对应的方法。
+(3)避免方法参数过多(不要超过4个参数)。有三种方法来解决：
+--1.拆分成多个方法，每个方法传参数子集。
+--2.创建静态成员类来保存参数的分组。
+--3.从对象的创建和调用都使用建造者模式。
+
+41.慎用重载：
+
+重载方法的选择是在编译的时候就完成了，对于有多个具有相同参数个数的方法来说，应该尽量避免使用方法重载。
+
+42.慎用可变参数：
+
+不要过分滥用可变参数。
+
+43.返回长度为0的数组或者集合，而不要返回null。
+
+44.为所有的API写清文档注释：Javadoc。
+
+描述清楚API做了什么事情，和客户端有什么约定，包括前置条件和后置条件，方法的副作用是什么，线程安全性如何。
+@param、@return、@throws
+
+七、通用程序设计：
+
+45.将局部变量的作用域最小化：
+
+最好的办法就是，在第一次使用它的地方声明。
+
+46.foreach循环优先于传统的for循环：
+
+有三种情况无法使用foreach循环，
+
+(1)过滤，遍历集合，并删除指定的元素，这种场景需要显式地使用迭代器，以便调用 remove() 方法。(快速失败和安全失败)
+
+(2)遍历并修改集合元素的值无法使用foreach，必须使用迭代器或者随机访问。
+
+(3)如果需要同时遍历多个集合，以便多个集合中的下标同时移动，这个时候就需要使用到迭代器或者索引变量了。
+
+47.尽量使用标准库的API而不要自己写。
+
+java.lang、java.util应当是必须要掌握的。
+
+48.需要精确值时，不要使用float和double。
+
+应该使用BigDecimal、int 或者 long。
+
+例如：货币。
+
+一种方式是：使用精确值计算。
+
+另一种方式是：把元、角、分 分别用Integer计算。
+
+49.基本类型优先于包装类型：
+
+但是在定义实体类时，还是要使用包装类型。sql默认类型都是null，一旦字段取不到数据就会抛异常。
+
+50.不要滥用字符串类型：
+
+(1)不要用字符串来代替其他的值类型。
+(2)不要用字符串来代替枚举类型。
+(3)不要用字符串来代替实体类型。
+
+51.注意字符串String连接时的性能：
+
+使用StringBuilder() 和 StringBuffer() 来替代 String 连接字符串。
+
+52.通过接口引用对象：
+
+即，面向超类编程。
+
+53.接口优先于反射：
+
+这里说的是不要滥用反射机制。
+
+反射的缺点：
+
+(1)绕过了编译时的类型检查。
+(2)反射的代码非常长和冗余。
+(3)性能相对比较差。
+
+54.谨慎地使用本地方法：
+
+(1)本地方法会打破跨平台性。
+(2)本地语言不安全。
+
+55.谨慎地进行优化：
+
+这一条说的是，不能一味追求性能，而使用结构不好的编程设计。在良好的设计实现完成后，有优化需求时，应该借助性能剖析工具，针对局部问题进行优化，而不是全局地大面积优化。
+
+56.保持良好的命名习惯：驼峰命名、见名知意。
+
+八、异常：
+
+57.只针对异常的情况才使用异常：
+
+不要滥用异常，不能把异常用于逻辑实现。
+
+58.对可恢复的情况使用受检异常，对编程错误使用运行时异常。
+
+59.避免不必要地使用受检异常：
+
+60.优先使用jdk中的标准异常：
+
+61.抛出与抽象相对应的异常：
+
+更高层的实现应该捕获低层的异常，同时抛出可以按照高层抽象进行解释的异常。(也就是把异常向上抛)
+
+62.每个方法抛出的异常都要有文档：
+
+使用Javadoc。
+
+63.在细节消息中包含能捕获失败的信息：
+
+这一条也就是说捕获和处理异常的时候，应该保存和异常相关的信息，比如：传入参数和域的值。
+
+64.努力使失败保持原子性：
+
+一般而言，失败的方法调用应该使对象保持在被调用之前的状态。这种属性就称为具有失败原子性。
+
+65.不要忽略异常：略。
+
+九、并发：
+
+66.同步访问共享的可变数据：
+
+即，多线程互斥同步。
+
+67.避免过度同步：
+
+为了避免死锁和数据破坏，不要从同步区域内部去调用外部方法。要尽量限制同步区域内部的工作量。
+
+68.executor和task优先于线程：
+
+这里说的是使用jdk1.5添加的API 线程池来代替单个线程的创建和销毁。
+
+当服务器负载比较重的时候，最好使用Executors.newFixedThreadPool，通过配置，可以提供指定数目的线程数量。
+
+使用ScheduledThreadPoolExecutor代替Timer来做定时器。
+
+69.并发工具优先于wait()和notify()：
+
+避免使用 wait() 和 notify() 方法，而使用同步容器，如：Vector、CurrentHashMap、HashTable。
+
+效率对比：
+
+HashMap > CurrentHashMap > HashTable。
+
+CurrentHashMap 和 HashTable 都是线程安全的，CurrentHashMap 效率较高，但是是若一致性，HashTable 效率最低，但是是强一致性，前者不能完全代替后者。
+
+70.线程安全性的文档化：
+
+每个类都应该仔仔细细地说明线程的安全性。
+
+线程安全性级别：
+
+不可变的：类实例是不可变的。所以，不需要外部同步。包括：String、Long。
+
+无条件的线程安全：实例可变，但内部同步，可以并发使用，无须外部同步。如：CurrentHashMap。
+
+有条件的线程安全：除了有些方法为进行安全的并发使用而需要外部同步外，这个级别与无条件的线程安全相同。如：Collections.synchronizedList(list);
+
+非线程安全：实例可变，用户必须外部同步。如：ArrayList、HashMap。
+
+线程对立：不能安全地被并发使用。
+
+71.慎用延迟初始化：
+
+延迟初始化：是延迟到需要域的值时才将它初始化的行为。是一种优化手段。
+
+72.不要依赖线程调度器：略。
+
+73.不要使用线程组。
+
+十、序列化：
+
+序列化：
+
+将一个对象编码成一个字节流。
+
+反序列化：
+
+序列化的逆向处理。
+
+74.不要任意地将类实现Serializable接口：
+
+(1)一旦一个类发布，就大大降低了改变这个类实现的灵活性。
+
+(2)增加了出现Bug和安全漏洞的可能性。
+
+(3)测试负担增加。
+
+75.考虑自定义的序列化形式：略。
+
+76.保护性的编写readObject：略。
+
+77.对于实例控制，枚举类型优先于readResolve：略。
+
+78.考虑用序列化代理代替序列化实例：略。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

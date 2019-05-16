@@ -1,0 +1,200 @@
+1.定义：
+
+异步框架的Web服务器，也可以用作反向代理，负载平衡器和HTTP缓存。
+
+2.代理：
+
+代理的定义：在厂家、专卖店、用户的关系中，专卖店就是代理、厂家就是被代理角色、用户就是目标角色。
+
+反向代理：
+
+用户1  ->               ->  服务器A
+用户2  ->  Nginx服务器  ->  服务器B    
+用户3  ->               ->  服务器C
+
+如图中，用户具体请求的是那一台服务器是不明确的，这里Nginx扮演的就是反向代理的角色。
+即：反向代理隐藏了服务器的信息，主要用于服务器集群分布式部署的情况下。
+
+正向代理：
+
+用户1  ->
+用户2  ->  正向代理服务器 ->  资源
+用户3  ->
+
+如图中，客户端明确要访问的服务器地址，服务器只清楚请求来自哪个代理服务器，而不清楚请求具体来自哪个客户端，正向代理隐藏了真实用户的信息。
+
+如果正向代理和反向代理一起使用，就会如下图所示：
+
+用户1  ->                                 <-  服务器A
+用户2  ->  正向代理服务器  <->  反向代理  <-  服务器B
+用户3  ->                                 <-  服务器C
+
+3.负载均衡：
+
+负载量：客户端发送的、Nginx反向代理服务器接收到的请求数量。
+
+均衡规则：请求数量按照一定的规则进行分发到不同的服务器处理的规则就是一种均衡规则。
+负载均衡：将服务器接收到的请求按照规则分发的过程。
+
+硬件负载均衡：成本高，稳定性和安全性好。
+软件负载均衡：利用现有技术结合主机硬件实现的一种消息队列分发机制。
+
+Nginx支持的负载均衡调度算法方式：
+weight轮询(默认)：接收到的请求按照顺序逐一分配到不同的后端服务器，若某一服务器宕机，Nginx自动将该服务器剔除出队列。可以为不同的服务器设置一个权重值(weight)来调整服务器被分配到请求的几率。
+ip_hash：每个请求按照发起客户端的ip的hash结果进行匹配，所以一个固定的ip地址总会访问到同一个后端服务器。
+fair：智能调整调度算法，动态地根据后端服务器的请求处理到响应的时间进行均衡分配。Nginx默认不支持。
+url_hash：按照访问的url的hash结果分配请求，每个请求的url会指向后端固定的某个服务器。Nginx默认不支持。
+
+4.动静分离架构模式：参考动静分离架构图。
+
+5.Nginx的下载安装：
+
+版本说明：
+Mainline Version：开发版。
+Stable Version：最新稳定版。
+Legacy Versions：遗留的老版本的稳定版。
+Pre-Build Packages：预编译版本。
+
+Linux(CentOS)下使用yum安装。
+
+6.安装启动Nginx：
+
+http://nginx.org/en/download.html，下载对应版本的安装包。
+
+windows下：
+
+在安装目录下双击nginx.exe或者命令行对应目录中start nginx。访问默认端口80，打开欢迎页面。
+
+重启服务：nginx -s reload
+
+关闭服务：nginx -s stop
+
+7.配置：
+
+重要的配置文件：
+
+/conf/nginx.conf：
+
+listen：当前的nginx代理服务器监听的端口。
+
+server_name：表示监听到之后需要转到哪里去。可以指定到本地文件夹内。
+
+location：表示匹配的路径，"/"表示所有的请求都被匹配到这里。proxy_pass 配置请求转发地址。
+
+root：表示当匹配这里请求的路径时，将会在这个文件夹内寻找相应的文件。
+
+index：当没有指定主页时，默认会选择这个指定的文件，可以指定多个，并按顺序加载，如果第一个不存在则查找第二个，以此类推。
+
+8.配置跳转tomcat：
+
+在/conf/nginx.conf文件中，
+
+	#tomcat-server
+	upstream tomcatserver{
+		server localhost:8080;
+	}
+	
+	server {
+        listen       8090;
+        server_name  localhost;
+
+        location / {			
+			proxy_pass http://tomcatserver;
+        }
+
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+	
+9.负载均衡：
+
+在/conf/nginx.conf文件中，
+
+	#tomcat-server
+	upstream tomcatserver{
+		server localhost:8080 weight=2;
+		server localhost:8004 weight=1;
+	}
+	
+在tomcatserver中配置多个服务地址即可，weight代表权重，weight越高则分配到的几率越大。
+
+10.静态资源分离：
+
+在/conf/nginx.conf文件中，
+
+	#tomcat-server
+	upstream tomcatserver{
+		server localhost:9001;
+	}
+	
+    location / {		
+		proxy_pass http://tomcatserver;
+    }
+	
+	#如果请求包含这些后缀，直接取静态缓存
+	location ~ .*.(gif|jpg|jpeg|png|bmp|swf|css|js|html)$ {
+        root static;
+    }	
+
+在安装目录下的指定文件夹(static)中，存放静态资源文件，如果请求中符合定义的正则规则，则直接取缓存的静态资源，否则转发tomcat服务器。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

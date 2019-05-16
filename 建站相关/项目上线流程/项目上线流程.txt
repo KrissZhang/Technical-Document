@@ -1,0 +1,113 @@
+1.发布准备：
+
+一台Linux(CentOS/Ubuntu)服务器。
+一款Web服务器(Nginx/Apache/Tomcat)
+一个属于自己的独立域名(cn/com/org/...)
+
+2.购买阿里云服务器：
+
+(1)访问阿里云官网，选择云服务器ECS。
+
+(2)定制服务器，选择镜像为CentOS，版本7以上。
+
+(3)安全组，除了默认打开的端口外，还要勾选打开80端口。22和3389端口是Linux和Windows远程登录开放的端口。
+
+(4)在系统配置时选择登录凭证。设置好密码信息。填写主机名。
+
+购买完成之后，进入管理控制台，选择云服务器ECS，查看服务器相关信息。
+
+3.链接到远程服务器：
+
+推荐远程链接工具，Gitbash。
+
+远程连接命令：
+
+ssh user@remote_ip 连接到远程服务器。
+
+4.Web服务器的选择(nginx)：
+
+Nginx：高性能、高并发。
+Apache：多平台、安全、流行。
+Tomcat：多用于Java做jsp解析。
+
+(1)使用命令nginx -V查看nginx的版本信息，以确认是否已安装nginx。如果找不到对应的命令信息则表示未安装。
+
+(2)采用yum安装，命令：yum install nginx。但是nginx并不在官方软件源中，所以使用命令：yum install epel-release，从epel中安装源。然后再使用：yum install nginx 安装nginx。
+
+5.配置Web服务器(nginx)：如果vim没有安装，则使用 yum install vim 进行安装。
+
+(1)将nginx配置文件中的：user nginx 改为 user root。(权限)
+
+(2)修改nginx配置文件中的：http > server > location。
+
+配置文件的位置：/etc/nginx/nginx.conf。可以使用nginx -t 对配置文件进行语法检查。
+
+6.上传网站到服务器：如果scp没有安装，则使用 yum install openssh-client 进行安装。
+
+使用scp命令上传项目文件：
+
+scp -r local_dir user@ip:/remote_dir
+
+如：scp -r ./* root@127.0.0.1:/root/www
+
+查看服务器上nginx相关进程：ps -ef | grep nginx
+
+停止nginx服务：nginx -s stop
+
+重新加载nginx：nginx -s reload
+
+
+注意：到这一步就可以使用ip来对项目网站进行访问了。
+
+7.域名购买及解析：
+
+(1)阿里云 -> 域名注册。
+
+(2)域名购买过程按照指引操作即可。
+
+(3)域名映射：
+
+进入控制台，打开域名列表，选择域名，点击 "解析" 。
+
+可以分别使用 "新手指引"，和手动的 "添加解析"。手动操作时，注意添加 "@" 的情况。(www 和 @)
+
+最后注意备案，服务器信息和域名信息要一致。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

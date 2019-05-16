@@ -1,0 +1,341 @@
+1.Maven是什么：
+
+Maven是基于项目对象模型(POM)，可以通过一小段描述信息来管理项目的构建、报告和文档的软件项目管理工具。
+
+2.Maven环境搭建：
+
+(1)apache官网下载。
+
+下载包目录简介：
+
+/bin    包含mvn运行脚本
+/boot   包含类加载器框架
+/conf   配置文件目录
+/lib    自身和第三方类库
+
+(2)配置环境变量：
+
+M2_HOME    Maven安装目录
+Path       追加%M2_HOME%\bin
+
+(3)在命令行中使用：mvn -v  验证Maven是否构建成功
+
+3.构建最简单的Maven项目：
+
+Maven目录结构：
+src
+    -main
+	    -java
+			-package
+		-resource
+			
+	-test
+		-java
+			-package
+			
+pom.xml文件标签简单说明：
+
+<modelVersion>4.0.0</modelVersion>        Maven版本
+<groupId>com.self</groupId>               项目包名
+<artifactId>sbt</artifactId>              模块名
+<version>0.0.1-SNAPSHOT</version>         版本号
+
+<dependencies>
+	<dependency>
+		    <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.8</version>
+	</dependency>
+</dependencies>          
+
+依赖
+
+pom.xml文件和src目录同级。
+
+4.Maven常用构建命令：
+
+mvn -v    查看maven版本
+mvn compile    编译
+mvn test    测试
+mvn package    打包
+
+mvn clean    删除target(存放经过编译的字节码文件和测试报告)
+mvn install    安装jar包到本地仓库中
+
+在编译过程中，会去pom.xml中查找依赖，再根据坐标去本地仓库中查找，如果有相关jar包，则添加到classpath中，如果没有则去网上的中央仓库下载并放到本地仓库中。
+
+5.使用archetype插件用于创建符合maven规定的目录骨架：
+
+命令：
+mvn archetype:generate
+
+6.Maven坐标和仓库：
+
+在maven中所有构件均通过坐标唯一标识。groupId、artifactId、version标识构件坐标。
+
+仓库：
+
+本地仓库：找不到构件则去全球中央仓库下载。
+
+远程仓库：找不到则报错。
+
+镜像仓库：国内使用。
+
+修改镜像仓库地址：
+
+文件 /conf/settings.xml，修改 <mirror>...</mirror> 元素。
+
+如：
+
+<mirrors>
+	<mirror>
+		<id></id>
+		<mirrorOf>central</mirrorOf>
+		<name>central mirror in china</name>
+		<url>http://maven.net.cn/content/groups/public</url>
+	</mirror>
+</mirrors>
+
+更改仓库位置：
+
+默认位置在：用户目录/.m2/repository/
+
+文件 /conf/settings.xml，修改：
+
+<localRepository>绝对路径目录</localRepository>
+
+7.eclipse中安装maven插件：略。
+
+8.maven的生命周期：
+
+完整的项目构建过程包括：
+
+清理、编译、测试、打包、集成测试、验证、部署。
+
+maven生命周期：
+
+clean    清理项目
+default  构建项目
+site     生成项目站点
+
+三者相互独立，分别又包含多个阶段，后面的阶段又包含前面的阶段。
+
+clean：
+
+pre-clean：执行清理前的工作
+clean：清理上一次构建生成的所有文件
+post-clean：执行清理后的文件
+
+default：最核心
+
+compile  test  package  install
+
+site：
+
+pre-site：在生成项目站点前要完成的工作
+site：生成项目的站点文档
+post-site：在生成项目站点后要完成的工作
+site-deploy：发布生成的站点到服务器上
+
+9.maven插件：maven本身没有执行任务的能力，通过插件来实现。
+
+如：打包插件
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+				<version>3.0.1</version>
+				<executions>
+					<execution>
+					    <phase>package</phase>                      -> 在package阶段执行插件
+						<goals>
+						    <goal>jar-no-fork</goal>                -> 执行目标
+						</goals>
+					</execution>
+				</executions>
+            </plugin>
+        </plugins>
+    </build>
+
+10.pom.xml常用元素介绍：
+
+pom.xml是maven中的核心管理文件。
+
+<project></project>    根元素，包含一些约束
+
+<modelVersion></modelVersion>    指定了当前pom的版本
+
+<groupId></groupId>              反写的公司网址 + 项目名
+<artifactId></artifactId>        项目名 + 模块名
+<version></version>              版本号(大版本号.分支版本号.小版本号)  SNAPSHOT(快照)、alpha(内部测试)、beta(公测)、release(稳定)、GA(正式)。
+<package></package>              打包方式，默认是jar，还可以是war、zip等。
+
+<name></name>                    项目描述名
+<url></url>                      项目地址
+<description></description>      项目描述
+
+<developers></developers>        开发人员列表
+<licenses></licenses>            许可
+<organization></organization>    组织
+
+<dependencies>                   依赖列表
+	<dependency>                 依赖项
+		<groupId></groupId>
+        <artifactId></artifactId>
+        <version></version>
+		<type></type>
+		<scope>test</scope>      依赖范围
+		<optional></optional>    设置依赖是否可选，只有true和false两个值，默认为false
+		<exclusions>             排除依赖传递列表
+			<exclusion>          排除依赖传递项
+			</exclusion>
+		</exclusions>
+	
+	</dependency>
+    <dependency>                 依赖项
+	</dependency>
+</dependencies>
+
+<dependencyManagement>           依赖管理，这里添加的依赖项不会实际生效，一般用于子模块继承
+	<dependency>                 依赖项
+	</dependency>
+</dependencyManagement>
+
+<build>                          对构建行为提供支持 
+    <plugins>                    插件列表
+		<plugin>                 插件项
+			<groupId></groupId>
+            <artifactId></artifactId>
+            <version></version>
+		</plugin>
+	</plugins>
+</build>
+
+<parent></parent>                子模块中对父模块的继承
+<modules>                        指定多个模块一起编译
+	<module>
+	</module>
+</modules>              
+
+11.依赖范围：
+
+三种classpath：编译、测试、运行
+
+依赖范围就是用来控制依赖与三种classpath的关系。
+
+<scope></scope>    
+
+有6个可选值：compile(编译测试运行都有效)、provided(在编译和测试时有效)、runtime(在测试和运行时有效)、test(只在测试时有效)、
+system(与本机系统相关联，可移植性差)、import(导入范围，只用在dependencyManagement中，表示从其他pom导入配置)。默认为compile。
+
+12.依赖传递：
+
+传递依赖：A依赖B，B依赖C，所以A依赖C。
+
+** A的坐标信息 **
+<exclusions>             
+	<exclusion>
+		** C的坐标信息 **
+	</exclusion>
+</exclusions>
+
+13.maven依赖冲突：
+
+A 和 B中不同版本的包被C依赖，那么C依赖的是A还是B中的版本。
+
+短路优先原则，选择离得最近的版本
+
+如：
+
+A -> B -> C -> X(jar)
+A -> D -> X(jar)
+
+路径长度相同，则谁先声明，先解析谁
+
+14.maven聚合和继承：
+
+聚合：将多个项目一起install。
+
+(1)新建项目
+
+(2)修改新项目中的pom.xml文件：
+
+<package>pom</package>
+
+<modules>                        
+	<module>../xx1</module>
+	<module>../xx2</module>
+	<module>../xx3</module>
+</modules>
+
+继承：
+
+抽象多个项目都使用的依赖为父类。
+
+(1)新建项目
+
+(2)修改新项目中的pom.xml文件：
+
+<dependencyManagement>           
+	<dependency>
+		** 依赖坐标 **        被继承而不会生效的依赖
+	</dependency>
+</dependencyManagement>
+
+(3)修改pom.xml为：
+
+<packaging>pom</packaging>
+
+(4)在子项目中，添加：
+
+<parent>
+	** 父POM的坐标 **
+</parent>
+
+15.补充：
+
+<properties>
+	<junit.version>3.8.1</junit.version>
+</properties>
+
+<version>${junit.version}</version>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

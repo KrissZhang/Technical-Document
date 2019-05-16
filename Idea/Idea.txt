@@ -1,0 +1,130 @@
+1.官网下载、安装。
+
+2.定位代码：
+
+(1)跳转：
+
+项目级跳转：ctrl + alt + ] 和 ctrl + alt + [
+
+文件间的跳转：
+
+ctrl + e ：打开文件访问记录列表。
+
+修改位置的跳转：
+
+navigate -> last edit location ：跳转到上次编辑位置。这里的快捷键是 ctrl + q
+
+浏览位置的跳转：
+
+alt + 向左箭头  和  alt + 向右箭头
+
+利用书签进行跳转：通过添加书签后再进行跳转。感觉不太实用。
+
+打开Favorites，alt + 2
+收藏：alt + shift + f，光标放到类就是收藏类，放到方法就是收藏方法。
+
+字符跳转插件跳转：emacsIdea
+先通过settings -> plugins，安装插件。
+
+编辑区和文件区的来回跳转：
+从编辑区到文件区：alt + 1
+从文件区到编辑区：esc
+
+利用vim跳转：略。
+
+(2)精准搜索：
+
+搜索类：navigate -> classes ，这里是ctrl + shift + T
+
+搜索文件：navigate -> files ，这里是ctrl + shift + R
+
+搜索函数：navigate -> Symbol ，这里是ctrl + shift + alt + N
+
+字符串搜索：edit -> find -> find in path ，这里是ctrl + H
+
+3.代码小助手：
+
+列操作：
+
+对类似的行进行相同的操作：edit -> find -> select all occurrences。
+
+live template：创建模板指令。
+
+Settings -> Editor -> Live Templates，添加模板后直接使用。
+如：System.out.println("");  ->  sysout
+public static void main(String[] args){}  ->  main
+public static final String $VAR1$ = "$VAR2$";  ->  psfs
+public static final Integer $VAR1$ = $VAR2$;  ->  psfi
+/**
+ * $VAR3$
+ */
+public Integer $VAR1$ = $VAR2$;  ->  pic
+
+postfix：
+
+Settings -> Editor -> General -> Postfix Completion，只能使用预设的，不能自定义。
+常用的有：100.fori/sout/name.field/user.return/user.nn
+
+alter enter：
+自动创建函数
+list replace
+字符串format或者build
+实现接口
+单词拼写
+导包
+
+4.重构：
+
+重构变量：相当于eclipse中的alt + shift + r
+重构方法：先修改方法，在报错提示处使用alt + Enter，选择重构。
+
+5.抽取：
+
+抽取变量：Refactor -> extract -> variable
+抽取静态变量：Refactor -> extract -> Constant
+抽取成员变量：Refactor -> extract -> Field
+抽取方法参数：Refactor -> extract -> Parameter
+抽取函数：Refactor -> extract -> Method 
+
+6.寻找修改轨迹：
+
+对于git版本控制的代码，可以在代码左侧 右击 -> Annotate，即可查看代码作者。
+
+local history：VCS -> Local History -> Show History
+
+7.关联：
+
+与Spring的关联：File -> Project Structure -> Facets -> Spring。目前没有找到Spring Boot的配置，可以另外通过Go to -> Implementations，直接跳转到实现类。
+
+与数据库关联：右侧栏DataBase -> DataSource -> "+" -> 填写数据库配置信息 -> 生成数据库结构。不是很好用。
+
+8.调试：
+
+断点调试：
+添加断点：代码左侧单击。
+单步运行：F5/F6
+跳到下一个断点：Run -> Resume Program，这里时F8
+查看所有断点：可以在alt + 2的favorite中查看。也可以在调试面板View Breakpoints中查看。
+禁止所有断点：调试面板 -> Mute按钮。
+条件断点：略。
+表达式求值：Run -> Evaluate Expression，这里是ctrl + U
+运行到指定行：调试面板 -> Run to Cursor
+setValue：调试面板 -> F2
+
+9.其他操作：
+
+查看类大纲：ctrl + O
+
+
+
+
+
+
+
+
+
+
+
+
+
+

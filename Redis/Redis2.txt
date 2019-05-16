@@ -1,0 +1,339 @@
+1.入门：
+
+NoSQL：
+NoSQL = Not Only SQL
+非关系型的数据库
+
+为什么需要NoSQL：
+High performance - 高并发读写
+Huge Storage - 海量数据的高效率存储和访问
+High Scalability && High Availability - 高可扩展性和高可用性
+
+NoSQL数据库的四大分类：
+键值(key-value)存储    优势：快速查询，劣势：存储缺少结构化 Redis
+列存储  优势：查询快，扩展强  劣势：功能受限   Hbase
+文档数据库  优势：结构灵活，劣势：查询性能不高，缺少统一语法  MangoDb
+图形数据库
+
+NoSQL的特点：
+易扩展
+灵活的数据模型
+大数据量，高性能
+高可用
+
+2.Redis概述：
+
+高性能键值对数据库，支持的键值数据类型：
+字符串类型
+散列类型
+列表类型
+集合类型
+有序集合类型
+
+应用场景：
+缓存
+任务队列
+网站访问统计
+应用排行榜
+数据过期处理
+分布式集群架构中的session分离
+
+3.Redis安装：
+
+推荐安装在Linux服务器上。记得打开Linux6379端口。
+
+4.jedis入门：
+
+可以直接用jedis对象来操作redis。比较好的方式是使用jedisPool池化技术来操作redis。
+
+5.Redis的数据结构：
+
+字符串String，哈希hash，字符串列表list，字符串集合set，有序字符串集合sorted set
+
+key定义的注意点：
+不要过长，不要过短，统一命名规则
+
+(1)存储String：
+二进制安全的，存入和获取的数据相同
+Value最多可以容纳的数据长度是512M
+
+存储String常用命令：
+set：赋值
+get：取值
+getset：getset 取值key 新设置值value
+del：删除值
+incr：递增，incr num ，num加1，如果num不存在初始化为0再加1，如果不能转为整形则返回错误信息。
+decr：递减，和递增类似。
+incrby：指定加几，incrby num 3，和incr类似，指定加3。
+decrby：指定减几，decrby num 3，和decr类似，指定减3。
+append：追加字符串，返回的是长度。append num 5，结果为"35"，返回2。如果num不存在，则创建空串再链接。
+
+(2)存储Hash：
+String Key和String Value的map容器。
+
+常用命令：
+
+赋值：
+hset myhash uname jack
+hset myhash age 18
+或者
+hmset myhash2 uname jack age 21
+
+取值：
+hget myhash uname
+或者
+hmget myhash2 uname age
+或者
+hgetall myhash
+
+删除：
+hdel myhash2 uname age
+当删除字段不存在时返回0
+
+del命令删除整个哈希：del myhash
+
+自增：hincrby myhash age 5
+
+判断某个属性是否存在：1--存在，0--不存在
+hexists myhash uname
+
+获取属性的数量：
+hlen myhash
+
+获取所有的属性：
+hkeys myhash
+
+获取所有值：
+hvals myhash
+
+(3)存储list:按照插入顺序排列的字符串列表。消息列表使用场景。
+ArrayList使用数组方式
+LinkedList使用双向链接方式
+双向链表中添加数据/双向链表中删除数据
+
+存储list常用命令：
+
+两端添加：
+左侧添加：lpush mylist a b c
+右侧添加：rpush mylist 1 2 3
+返回数据长度
+
+查看列表：
+查看列表从指定的位置开始和结束，如果索引为负数则表示倒数第几个元素
+lrange mylist 0 3 从1到4个元素
+lrange mylist 0 -2 从1到倒数第二个元素     
+
+两端弹出：
+左侧弹出(一个元素)：lpop mylist 
+右侧弹出(一个元素)：rpop mylist
+
+获取列表元素个数：
+llen mylist
+
+扩展命令：
+
+lpushx mylist x 仅当key存在的时候在列表头部插入值
+rpushx mylist y 类似
+lrem mylist count value 删除count个值为value的元素。count>0从头向尾，count<0从尾向头，count=0则删除所有的value元素。返回删除个数。
+lset mylist 3 mmm  将第4个元素的值设置为mmm。
+linsert mylist before b 11  在元素b前插入11
+linsert mylist after b 22  在元素b后插入22
+rpoplpush mylist mylist2 将mylist中右侧一个元素弹出添加到mylist2左侧。
+
+(4)存储set：可以看作是没有排序顺序的列表，但是元素不能重复。和Java中的Set类似。
+
+Set可以包含的最大元素数量是4294967295
+
+存储Set常用命令：
+
+添加：
+sadd myset a b c  返回添加元素个数，添加失败时返回0
+
+删除：
+srem myset 1 2  返回删除元素个数
+
+查看set中有那些数据：
+smembers myset 
+
+判断set中有没有指定的元素：
+sismember myset x
+
+差集运算：
+sdiff mya1 myb1
+
+交集运算：
+sinter mya1 myb1
+
+并集：
+sunion mya1 myb1
+
+获取set中成员的数量：
+scard myset
+
+返回随机元素：
+srandmember myset
+
+将差集存入新的集合：
+sdiffstore my1 mya1 myb1
+
+将并集存入新的集合：
+sunionstore my2 mya1 myb1
+
+set用于维护数据对象之间的关联关系。
+
+(5)存储Sorted-Set：
+
+Sorted-Set和Set的区别：
+Sorted-Set中的每一个元素都会有一个分数与元素关联，通过这个分数来对集合从小到大排序。成员唯一，在集合中的位置是有序的，分数可以重复。添加/删除/更新会非常的快速。
+
+使用场景：排名
+
+Sorted-Set常用命令：
+
+添加：
+zadd mysort 70 zs 80 ls 90 ww  返回添加的元素个数，添加相同的元素为替换，返回0。
+
+获得集合中成员的数量：
+zcard mysort
+
+获取成员的分数：
+zscore mysort ww
+
+删除元素：
+zrem mysort tom ww
+
+范围查找：
+zrange mysort 0 -1 
+zrange mysort 0 -1 withscores
+zrevrange mysort 0 -1 withscores 从大到校排序
+zremrangebyrank mysort 0 4 按照排名范围删除
+zremrangebyscore mysort 80 100 按照分数范围删除
+zrangebyscore mysort 0 100 withscores limit 0 2 按分数排序并且只显示两个元素
+
+zincrby mysort 3 ls 给ls自增3分
+
+zcount mysort 80 90 分数在80到90之间元素的个数
+
+6.Keys的通用操作：
+
+查看key：
+keys *  查看所有的key
+keys my?  查看所有以my开头的key  
+
+删除key：
+del my1 my2
+
+判断key是否存在：
+exists my1 存在返回1，不存在返回0
+
+重命名：
+rename n1 n2
+
+设置过期时间：
+expire n1 1000
+
+查看剩余过期时间：
+ttl n1
+
+查看key的类型：
+type n1
+
+7.Redis的特性：
+
+多数据库：
+
+可以指定连接0到15任意一个数据库，用  select 1  链接第二个数据库。
+
+move myset 1 将myset移动到1号数据库。
+
+支持事务：
+
+multi命令：开启事务，后续所有操作都将被视为此事务中的操作。
+
+exec命令：提交事务。
+
+discard命令：回滚事务。
+
+8.Redis的持久化：
+
+内存中的数据同步到硬盘中。
+
+两种持久化方式：RDB和AOF。
+
+持久化方案：RDB持久化/AOF持久化/无持久化/同时使用RDB和AOF。
+
+
+RDB：固定时间将内存中的数据写入硬盘。默认支持。
+
+优势：
+
+数据库只包含一个文件，易恢复/易转移/性能最大化。
+
+劣势：
+
+不能最大限度的保证数据不会丢失。写入硬盘时可能造成阻塞。
+
+配置：
+
+配置信息保存在redis.conf文件中。
+
+
+AOF：将所有的操作都保存在一个日志文件中。
+
+优势：
+
+可靠性 安全性比较高
+
+劣势：
+
+数据文件比较大，效率比RDB低。
+
+配置：
+
+AOF默认没有打开：redis.conf文件中配置 appendonly no 改为 yes，同步信息保存在appendonly.aof中。选择策略：appendfsync always。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
