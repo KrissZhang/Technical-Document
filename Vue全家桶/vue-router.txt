@@ -1,0 +1,730 @@
+1.vue-router是什么？
+
+Vue Router 是 Vue.js 官方的路由管理器。它和 Vue.js 的核心深度集成，让构建单页面应用变得简单。
+
+2.vue-router包含的功能有：
+
+(1)嵌套的路由/视图表。
+
+(2)模块化的、基于组件的路由配置。
+
+(3)路由参数、查询、通配符。
+
+(4)基于 Vue.js 过渡系统的视图过渡效果。
+
+(5)细粒度的导航控制。
+
+(6)带有自动激活的 CSS class 的链接。
+
+(7)HTML5 历史模式或 hash 模式，在 IE9 中自动降级。
+
+(8)自定义的滚动条行为。
+
+3.安装：
+
+使用 vue-cli 构建初始化项目时会提示安装，也可以自行使用命令安装：
+
+npm install vue-router --save
+
+4.解读核心文件：
+
+(1)用 vue-cli 构建项目之后，在 src/router/index.js 文件中，可以看到：
+
+//引入vue框架
+import Vue from 'vue'
+//引入vue-router路由依赖
+import Router from 'vue-router'
+//引入页面组件，命名为HelloWorld
+import HelloWorld from '@/components/HelloWorld'
+
+//Vue全局使用Router
+Vue.use(Router)
+
+//定义路由配置
+export default new Router({
+  routes: [                //配置路由，这里是个数组
+    {                        //每一个链接都是一个对象
+      path: '/',            //链接路径
+      name: 'HelloWorld',        //路由名称，
+      component: HelloWorld     //对应的组件模板
+    }
+  ]
+})
+
+(2)在系统入口文件 main.js 中注入 router：
+
+//引入vue框架
+import Vue from 'vue'
+//引入根组件
+import App from './App'
+//引入路由配置
+import router from './router'
+
+//关闭生产模式下给出的提示
+Vue.config.productionTip = false
+
+//定义实例
+new Vue({
+  el: '#app',
+  router, // 注入框架中
+  components: { App },
+  template: '<App/>'
+})
+
+5.路由属性配置说明：
+
+export default new Router({
+    mode: 'history', //路由模式，取值为history与hash
+    base: '/', //打包路径，默认为/，可以修改
+    routes: [
+    {
+        path: string, //路径
+        ccomponent: Component; //页面组件
+        name: string; // 命名路由-路由名称
+        components: { [name: string]: Component }; // 命名视图组件
+        redirect: string | Location | Function; // 重定向
+        props: boolean | string | Function; // 路由组件传递参数
+        alias: string | Array<string>; // 路由别名
+        children: Array<RouteConfig>; // 嵌套子路由
+        beforeEnter?: (to: Route, from: Route, next: Function) => void; // 路由单独钩子
+        meta: any; // 自定义标签属性，比如：是否需要登录
+        icon: any; // 图标
+        // 2.6.0+
+        caseSensitive: boolean; // 匹配规则是否大小写敏感？(默认值：false)
+        pathToRegexpOptions: Object; // 编译正则的选项
+    }
+    ]
+})
+
+6.页面跳转：
+
+(1)router-link 标签跳转：
+
+在 html 标签内使用 router-link 跳转，类似于 a 标签的使用，如下：
+
+<p>导航 ：
+   <router-link to="/">首页</router-link>
+   <router-link to="/hello">hello</router-link>
+</p>
+
+to：导航路径
+
+(2)js代码内部跳转：
+
+先编写一个按钮，在按钮上绑定 goHome() 方法：
+
+<button @click="goHome">回到首页</button>
+
+在<script>模块里加入goHome方法，并用 this.$router.push('/')导航到首页：
+
+export default {
+    name: 'app',
+    methods: {
+        goHome(){
+            this.$router.push('/home');
+        }
+    }
+}
+
+(3)其他常用方法：
+
+//后退一步记录，等同于 history.back()
+this.$router.go(-1)
+
+//在浏览器记录中前进一步，等同于 history.forward()
+this.$router.go(1)
+
+7.子路由(路由嵌套)：
+
+子路由，也叫路由嵌套，采用在 children 后跟路由数组来实现，数组里和其他配置路由基本相同，需要配置 path 和 component ，然后在相应部分添加 <router-view/> 来展现子页面信息，相当于嵌入 iframe 。
+
+(1)src/components/Home.vue (父页面)：
+
+<template>
+    <div class="hello">
+        <h1>{{ msg }}</h1>
+        <!-- 添加子路由导航 -->
+        <p>导航 ：
+            <router-link to="/home">首页</router-link> | 
+            <router-link to="/home/one">-子页面1</router-link> |
+            <router-link to="/home/two">-子页面2</router-link>
+        </p>
+        <!-- 子页面展示部分 -->
+        <router-view/>
+    </div>
+</template>
+
+<script>
+export default {
+    name: 'Home',
+    data () {
+        return {
+            msg: 'Home Page!'
+        }
+    }
+}
+</script>
+
+<style scoped>
+</style>
+
+(2)src/components/One.vue (子页面1)：
+
+<template>
+    <div class="hello">
+        <h1>{{ msg }}</h1>
+    </div>
+</template>
+<script>
+export default {
+    name: 'One',
+    data () {
+        return {
+            msg: 'Hi, I am One Page!'
+        }
+    }
+}
+</script>
+
+<style scoped>
+</style>
+
+(3)src/components/Two.vue (子页面2)：
+
+<template>
+    <div class="hello">
+        <h1>{{ msg }}</h1>
+    </div>
+</template>
+<script>
+export default {
+    name: 'Two',
+    data () {
+        return {
+            msg: 'Hi, I am Two Page!'
+        }
+    }
+}
+</script>
+
+<style scoped>
+</style>
+
+(4)src/router/index.js (路由配置)：
+
+import Vue from 'vue'
+import Router from 'vue-router'
+import Home from '@/components/Home'
+import One from '@/components/One' 
+import Two from '@/components/Two'
+
+Vue.use(Router)
+
+export default new Router({
+    routes: [
+    {
+        path: '/', // 默认页面重定向到主页
+        redirect: '/home'
+    },
+    {
+        path: '/home', // 主页路由
+        name: 'Home',
+        component: Home,
+        children:[ // 嵌套子路由
+            {
+                path:'one', // 子页面1
+                component:One
+            },
+            {
+                path:'two', // 子页面2
+                component:Two
+            },
+        ]
+    }
+    ]
+})
+
+8.路由参数传递：
+
+(1)通过 <router-link> 标签中的 to 传参：
+
+在 src/components/Home.vue 里面导航中添加：
+
+<router-link :to="{name: 'one', params:{username:'test123'}}">子页面1</router-link>
+
+在 src/router/indes.js 中添加：
+
+{
+    path:'one', // 子页面1
+    name: 'one', // 路由名称-命名路由
+    component:One
+}
+
+在 src/components/One.vue 里接受参数：
+
+<h2>{{$route.params.username}}</h2>
+
+(2)url中传递参数：
+
+在路由中以冒号传递，在 src/router/index.js 中加入：
+
+{
+    path:'/home/two/:id/:name', // 子页面2
+    component:Two
+},
+
+接受参数，在 src/components/Two.vuez 中加入：
+
+<p>ID：{{ $route.params.id}}</p>
+<p>名称：{{ $route.params.name}}</p>
+
+路由跳转，在 src/components/Home.vue 中加入：
+
+<router-link to="/home/two/1/张三">子页面2</router-link>
+
+注意：to之前没有冒号为字符串路由，必须全部匹配。
+
+如果路由参数需要有特定的规则，就需要使用正则表达式，如：
+
+{
+    path:'/home/two/:id(\\d+)/:name', // 子页面2
+    component:Two
+}
+
+(3)编程式导航 -params 传递参数：
+
+在 src/router/index.js 页面中加入：
+
+{
+    path:'/home/three', //子页面3
+    name: 'three',
+    component:Three
+}
+
+在 src/components/Three.vue 页面中加入：
+
+<p>ID：{{ $route.params.id}}</p>
+<p>名称：{{ $route.params.name}}</p>
+
+在 src/components/Home.vue 中加入：
+
+// template
+<button @click="toThreePage">页面3-params传参</button>
+
+// script
+methods: {
+    toThreePage() {
+        this.$router.push({name: 'three', params: {id: 1, name: 'zhangsan'}})
+    }
+}
+
+注意：
+
+A.动态路由使用 params 传递参数，在 this.$router.push() 方法中 path 不能和 params 一起使用，否则 params 将无效。需要用 name 来指定页面。
+
+B.以上方式参数不会显示到浏览器的地址栏中，如果刷新一次页面，就获取不到参数了，改进方式将第一部中的代码改成如下：
+
+{
+    path:'/home/three/:id/:name', // 子页面3
+    name: 'three',
+    component:Three
+}
+
+(4)编程式导航 -query 传递参数：
+
+在 src/router/index.js 页面加入：
+
+{
+    path:'/home/three', // 子页面3
+    name: 'three',
+    component:Three
+}
+
+在 src/components/Three.vue 页面加入：
+
+<p>ID：{{ $route.query.id}}</p>
+<p>名称：{{ $route.query.name}}</p>
+
+在 src/components/Home.vue 加入：
+
+// template
+<button @click="toThreePage">页面3-params传参</button>
+
+// script
+methods: {
+    toThreePage() {
+        this.$router.push({path: '/home/three', query: {id: 1, name: 'zhangsan'}})
+    }
+}
+
+注意：动态路由使用query传递参数，会显示到浏览器地址栏中，以上链接为 /home/three?id=1&name=zhangsan
+
+9.命名路由-命名视图-重定向-别名：
+
+(1)命名路由：
+
+给一个路由命一个唯一的名称，然后跳转调用这个名称即可。
+
+在 src/router/index.js 中加入一个带 name 的路由，
+
+{
+    path: 'one', // 子页面1
+    name: 'one', // 路由名称-命名路由
+    component: One // 页面组件
+}
+
+在 src/component/Home.vue 页面中调用，
+
+// template跳转调用
+<router-link :to="{name: 'one'}">子页面1</router-link>
+
+// router.push函数跳转调用
+router.push({ name: 'user'}})
+
+(2)命名视图：
+
+在同一个页面展示多个视图，如果不用嵌套，只能采用命名视图来实现了。
+
+在 src/router/index.js 中：
+
+import Vue from 'vue'
+import Router from 'vue-router'
+// 创建页面组件
+const Header = { template: '<div>Header</div>' }
+const Left = { template: '<div>Left</div>' }
+const Right = { template: '<div>Right</div>' }
+
+Vue.use(Router)
+
+export default new Router({
+    routes: [
+    {
+        path: '/', // 主页路由
+        components: {
+            default: Header,
+            a: Left,
+            b: Right
+        }
+    }
+    ]
+})
+
+在 src/App.vue 中：
+
+<template>
+    <div id="app">
+        <router-view />
+        <router-view name="a" class="left" />
+        <router-view name="b" class="right" />
+    </div>
+</template>
+
+<script>
+export default {
+    name: 'App'
+}
+</script>
+
+<style>
+#app {
+    text-align: center;
+    color: #2c3e50;
+    width: 500px;
+    border: 1px solid red;
+    margin: 0 auto;
+}
+
+.left,.right{
+    float: left;
+    width:48%;
+    text-align: center;
+    border:1px solid red
+}
+</style>
+
+注意：命名视图只能放在最顶级的页面中，即第一步中的代码不能放在其他页面中。
+
+(3)重定向：
+
+重定向是通过 route 的配置中关键词 redirect 来实现的。
+
+在 src/router/index.js 中，
+
+export default new Router({
+    routes: [
+    {
+        path: '/', // 默认页面重定向到主页
+        redirect: '/home' // 重定向
+    },
+    {
+        path: '/home', // 主页路由
+        component: Home,
+        children:[ // 嵌套子路由
+            {
+                path:'/home/two/:id/:name', // 子页面2
+                component:Two
+            },
+            {
+                path:'/home/three/:id/:name', // 子页面3
+                name: 'three', // 路由名称-命名路由
+                redirect: '/home/two/:id/:name' // 重定向-传递参数
+            },
+        ]
+    }
+    ]
+})
+
+在 src/components/Home.vue 中，
+
+<router-link to="/">首页</router-link> | 
+<router-link to="/home/two/1/lisi">子页面2</router-link>  |
+<router-link :to="{name: 'three', params: {id: 1, name: 'zhangsan'}}">子页面3</router-link>
+
+说明1：不带参数的重定向
+
+redirect: '/home' // 重定向-不带参数
+
+说明2：带参数的重定向
+
+redirect: '/home/two/:id/:name' // 重定向-传递参数
+
+(4)别名：
+
+别名是通过 route 的配置中关键词 alias 来实现的：
+
+在 src/router/index.js 中，
+
+{
+    path:'/one', // 子页面1
+    component:One,
+    alias: '/oneother'
+}
+
+在 src/components/Home.vue 中，
+
+<router-link to="/oneother">子页面1</router-link>
+
+说明1：redirect 和 alias 的区别
+
+①redirect：直接改变了 url 的值，把 url 变成了真实的 path 路径。
+②alias：url 路径没有被改变，这种更友好，让用户知道自己访问的路径，只是改变了<router-view>中的内容。
+
+说明2：别名不要用在 path 为 '/' 中，下面的写法不会生效：
+
+{
+    path: '/',
+    component: Hello,
+    alias:'/home'
+}
+
+10.过渡动画：
+
+(1)在 <router-view> 标签的外部添加 <transition> 标签，标签还需要一个 name 属性：
+
+<transition name="fade" mode="out-in">
+    <router-view />
+</transition>
+
+(2)加入 CSS，一共 4 个 CSS 类名，四个类名与 transition 的 name 属性相关，示例如下：
+
+/*页面切换动画*/
+/*进入过渡的结束状态，元素被插入时就生效，在过渡过程完成后移除*/
+.fade-enter-active {
+    transition: opacity .5s;
+}
+/*进入过渡的开始状态，元素被插入时生效，只应用一帧后立刻删除*/
+.fade-enter {
+    opacity: 0;
+}
+/*离开过渡的开始状态，元素被删除时触发，只应用一帧后立刻删除*/
+.fade-leave {
+    opacity: 1;
+}
+/*离开过渡的结束状态，元素被删除时生效，离开过渡完成后被删除*/
+.fade-leave-active {
+    opacity:0;
+    transition: opacity .5s;
+}
+
+
+过渡模式mode：
+
+in-out：新元素先进入过渡，完成之后当前元素过渡离开，默认模式。
+
+out-in：当前元素先进行过渡离开，离开完成后新元素过渡进入。
+
+11.mode 与 404：
+
+(1)mode 模式：
+
+export default new Router({
+    mode: 'history', //mode模式
+    routes: [...]
+})
+
+mode 取值说明：
+
+histroy：URL就像正常的 url，示例：http://localhost:8080/home
+hash：默认值，会多一个"#"，示例：http://localhost:8080/#/home
+
+(2)404页面设置：
+
+如果访问的路由不存在，或者用户输入错误时，会有一个404友好的提示页面，配置如下：
+
+在 src/router/index.js 中加入，
+
+// 404
+{
+    path: '*',
+    component: () => import('@/components/404')
+}
+
+在 src/components/404.vue 中编写，
+
+<template>
+    <div class="hello">
+        <h1>404 not found</h1>
+    </div>
+</template>
+<script>
+export default {
+    data () {
+        return {
+
+        }
+    }
+}
+</script>
+
+<style scoped>
+</style>
+
+12.路由钩子：
+
+即导航钩子，其实就是路由拦截器，vue-router 一共包含三类：
+
+全局钩子：最常用
+
+路由单独钩子
+
+组件内钩子
+
+
+(1)全局钩子：
+
+在 src/router/index.js 中，
+
+// 定义路由配置
+const router = new VueRouter({ ... })
+
+// 全局路由拦截-进入页面前执行
+router.beforeEach((to, from, next) => {
+    // 这里可以加入全局登陆判断
+    // 继续执行
+    next();
+});
+
+// 全局后置钩子-常用于结束动画等
+router.afterEach(() => {
+    //不接受next
+});
+
+export default router;
+
+每个钩子方法接收三个参数：
+
+to: Route  将要进入的目标[路由对象]
+from：Route  当前导航正要离开的路由
+next：Function  继续执行函数
+
+next()：继续执行
+next(false)：中断当前的导航
+next("/")或next({path:"/"})  跳转新页面，常用于登陆失效跳转登陆
+
+(2)路由单独钩子：
+
+在路由配置中单独加入钩子，在 src/router/index.js 中，
+
+{
+    path:'/home/one', // 子页面1
+        component: One,
+        // 路由内钩子
+        beforeEnter: (to, from, next) => {
+        console.log('进入前执行');
+            next();
+        }
+}
+
+(3)组件内钩子：
+
+在路由组件内定义钩子函数，
+
+beforeRouteEnter：进入页面前调用
+beforeRouteUpdate (2.2 新增)：页面路由改变时调用，一般需要带参数
+beforeRouteLeave：离开页面调用
+
+如：
+
+<script>
+export default {
+    name: 'Two',
+    data () {
+        return {
+            msg: 'Hi, I am Two Page!'
+        }
+    },
+    // 进入页面前调用
+    beforeRouteEnter(to, from, next) {
+        console.log('进入enter路由钩子')
+        next()
+    },
+    // 离开页面调用
+    beforeRouteLeave(to,from, next){
+        console.log('进入leave路由钩子')
+        next()
+    },
+    // 页面路由改变时调用
+    beforeRouteUpdate(to, from, next) {
+        console.log('进入update路由钩子')
+        console.log(to.params.id)
+        next()
+    }
+}
+</script>
+
+13.路由懒加载：
+
+(1)路由正常模式：
+
+// 1、先引入页面组件
+import Home from '@/components/Home'
+
+// 2、使用组件
+{
+    path: '/home',
+    component: Home
+}
+
+(2)懒加载模式：
+
+大项目中，为了提高初始化页面的效率，路由一般使用懒加载模式，共三种实现方式：
+
+第一种写法：
+
+component: (resolve) => require(['@/components/One'], resolve)
+
+第二种写法：
+
+component: () => import('@/components/Two')
+
+第三种写法：
+
+components: r => require.ensure([], () => r(require('@/components/Three')), 'group-home')
+
+注意：
+
+一般常用第二种简写
+
+第三种中，'group-home' 是把组件按组分块打包，可以将多个组件放入这个组中，在打包的时候 Webpack 会将相同 chunk 下的所有异步模块打包到一个异步块里面。
+
+

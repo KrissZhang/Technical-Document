@@ -1,0 +1,229 @@
+1.vue-cli是什么?
+
+vue-cli 是 vue 官方出品的快速构建单页应用的脚手架，里面集成了webpack、npm、nodejs、babel、vue、vue-router。
+
+2.安装 vue-cli：
+
+(1)npm安装：
+
+node 中集成了 npm，所以安装了node后自动安装好npm环境。
+
+查看npm的版本信息：
+
+npm -v
+
+(2)安装vue-cli：
+
+npm install vue-cli -g
+
+查看版本信息：
+
+vue -V
+
+3.初始化项目：
+
+(1)vue init命令：
+
+vue init <template-name> <project-name>
+
+<template-name>：表示模板名称，vue-cli官方提供了5种模板：
+
+①webpack：一个全面的 webpack+vue-loader 的模板，功能包括：热加载，linting、检测和CSS扩展。
+②webpack-simple：一个简单 webpack + vue-loader 的模板，不包含其他功能，让你快速的搭建vue的开发环境。
+③browserify：一个全面的 Browserify + vueify 的模板，功能包括热加载、linting、单元检测。
+④browserify-simple：一个简单 Browserify + vueify 的模板，不包含其他功能，让你快速的搭建vue的开发环境。
+⑤simple：一个最简单的单页应用模板。
+
+<project-name>：标识项目名称，用户根据自己的项目来起名字。
+
+(2)项目初始化：
+
+一般选择 webpack 这个模板。
+
+如：vue init webpack my-vue-demo
+
+根据后续的提示引导创建项目。
+
+(3)运行项目：
+
+进入到项目目录：
+
+cd my-vue-demo
+
+开发模式下运行项目：
+
+npm run dev
+
+项目发布打包：
+
+npm run build
+
+4.项目结构：
+
+(1)
+
+vue-cli 项目结构：参考 vue-cli 项目结构图。
+
+一般只需要掌握其中的src文件夹即可。
+
+(2)配置文件详解：
+
+build目录：主要是 webpack 配置。
+
+config目录：主要是项目相关配置。
+
+node_modules：项目依赖包。包括很多基础依赖，自己也可以根据需要安装其他依赖。安装方法：①打开命令行工具。②进入项目目录，输入 npm install 依赖包名称[@版本号] 
+
+(3)src项目核心文件讲解：
+
+index.html：主页，一般只定义一个空的根节点，在 main.js 里面定义的实例将挂载在根节点下，内容都通过 vue组件来填充。
+
+如：
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>my-vue-demo</title>
+  </head>
+  <body>
+      <!-- 定义的vue实例将挂载在#app节点下 -->
+    <div id="app"></div>
+  </body>
+</html>
+
+
+main.js：入口文件，为项目的入口文件，即单入口，主要是引入 vue 框架，根组件及路由设置，并且定义 vue 实例。
+
+如：
+
+// 引入vue框架
+import Vue from 'vue'
+// 引入根组件
+import App from './App'
+// 引入路由配置
+import router from './router'
+
+// 关闭生产模式下给出的提示
+Vue.config.productionTip = false
+
+// 定义实例
+new Vue({
+  el: '#app',
+  router,
+  components: { App },
+  template: '<App/>'
+})
+
+
+App.vue：根组件，一个 vue 页面通常由三个部分组成：模板(template)、js(script)、样式(style)。
+
+如：
+
+<!-- 模板 -->
+<template>
+    <div id="app">
+        <img src="./assets/logo.png">
+        <router-view/>
+    </div>
+</template>
+
+<!-- js代码 -->
+<script>
+export default {
+    name: 'App'
+}
+</script>
+
+<!-- css样式 -->
+<style>
+#app {
+    font-family: 'Avenir', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+    color: #2c3e50;
+    margin-top: 60px;
+}
+</style>
+
+[template]：
+
+模板只能包含一个父节点，也就是说顶层的 div 只能有一个。
+<router-view/>是子路由视图插槽，后面的路由页面都显示在此处，相当于 iframe。
+
+[script]：
+
+vue 通常用 es6 来写，用 export default 导出，其下面可以包含数据 data，生命周期 mounted等，方法 methods等。
+
+[style]：
+
+样式通过 <style></style> 包裹，默认影响全局，如需定义作用域只在该组件下起作用，需在标签上加 scoped，<style scoped></style>。
+
+引入外部CSS：
+
+<style>
+    import './assets/css/public.css'
+</style>
+
+
+router：路由配置。
+
+router文件夹下，有一个index.js的路由配置文件。
+
+说明如下：
+
+// 引入vue框架
+import Vue from 'vue'
+// 引入vue-router路由依赖
+import Router from 'vue-router'
+// 引入页面组件，命名为HelloWorld
+import HelloWorld from '@/components/HelloWorld'
+
+// 使用路由依赖
+Vue.use(Router)
+
+// 定义路由配置
+export default new Router({
+  routes: [
+    {
+      path: '/',
+      name: 'HelloWorld',
+      component: HelloWorld
+    }
+  ]
+})
+
+
+HelloWorld.vue：页面组件。
+
+以HelloWorld输出为例，说明如下：
+
+<template>
+  <div>
+    <!-- 输出变量 -->
+    <h1>{{ msg }}</h1>
+  </div>
+</template>
+
+<script>
+export default {
+  // 定义页面名称，可以不要
+  name: 'HelloWorld',
+  data () {
+    return {
+      // 定义变量
+      msg: 'HelloWorld'
+    }
+  }
+}
+</script>
+
+<style scoped>
+h1 {
+  font-size: 16px;
+  font-weight: normal;
+}
+</style>
+

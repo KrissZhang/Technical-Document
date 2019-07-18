@@ -1,0 +1,504 @@
+1.数据库优化的目的：
+
+(1)避免出现页面访问错误：
+
+由于数据库连接timeout产生页面5xx错误。
+由于慢查询造成页面无法加载。
+由于阻塞造成数据无法提交。
+
+(2)增加数据库的稳定性：
+
+很多数据库的问题都是由于低效的查询引起的。
+
+(3)优化用户体验：
+
+流畅页面的访问速度。
+良好的网站功能体验。
+
+2.数据库优化的入手方向：
+
+硬件 -> 系统配置 -> 数据库表结构 -> Sql及索引
+
+从左到右，成本由高变低，效果由低变高。
+
+
+Sql及索引优化：
+
+3.如何分析Sql查询：
+
+(1)演示数据库准备：
+
+使用MySql提供的 sakila 数据库：
+
+https://dev.mysql.com/doc/index-other.html
+
+(2)使用MySql慢查日志对有效率问题的Sql进行监控：
+
+显示变量的值：
+
+show variables like 'xxx'
+
+如：show variables like 'slow_query_log'    显示是否打开了慢查日志
+
+设置全局变量的值：
+
+set global 变量名=变量值
+
+如：
+
+set global slow_query_log_file='/home/mysql/sql_log/mysql-slow.log'    指定慢查日志文件位置
+
+set global log_queries_not_using_indexes=on    指定是否将没有使用索引的sql记录到慢查日志文件中
+
+set global long_query_time=1    指定慢查标准时间，以秒为单位
+
+慢查日志的存储格式：
+
+执行Sql的主机信息：
+# User@Host:root[root] @ localhost []
+
+Sql的执行信息：
+# Query_time:0.000024 Lock_time:0.000000 Rows_sent:0 Rows_examined:0
+
+Sql执行时间：
+set timestamp=1402389328;
+
+Sql的内容：
+select CONCAT('storage_engine',@@storage_engine) as INFO;
+
+(3)使用分析工具对慢查日志进行分析：
+
+mysql官方慢查日志分析工具：mysqldumpslow，随着mysql服务器的安装一并安装。最常用的工具，缺点是报表分析数据太少。
+
+列出mysqldumpslow指令列表：mysqldumpslow -h
+
+如，仅分析前3条sql：
+
+mysqldumpslow -t 3 D:\slowquery\mysql-slow.log | more
+
+mysqldumpslow输出：
+
+如：
+
+Count: 1 Time=0.00s(0s) Lock=0.00s(0s) Rows=10.0(10),root[root]@localhost
+select count(*) from actor;
+
+
+pt-query-digest：
+
+输出到文件：
+
+pt-query-digest slow-log > slow-log.report
+
+输出到数据库表：
+
+略。
+
+分析慢查日志生成分析报表：
+
+pt-query-digest 日志文件路径 | more
+
+注意：该工具只支持Linux平台。
+
+(4)通过慢查日志发现有问题的Sql：
+
+①查询次数多且每次查询占用时间长的Sql：
+
+通常为pt-query-digest分析的前几个查询。(执行占比高)
+
+②IO大的Sql：
+
+依据 pt-query-digest 分析中的 Rows examine项。(扫描行数越多，IO消耗越大)
+
+③未命中索引的Sql：
+
+依据 pt-query-digest 分析中的 Rows examine (扫描行数) 和 Rows sent (发送行数) 对比。如果扫描行数远远大于发送行数，那么就说明大量使用了表扫描来查询，索引的命中率并不高。
+
+(5)对Sql进行分析和优化：
+
+使用 explain 查询Sql的执行计划：
+
+如：
+
+explain select * from actor;
+
+explain 返回各列的含义：
+
+table：显示这一行的数据是关于哪张表。
+type：显示连接使用了何种类型。从最好到最差的连接类型为 const(常数查找)、eq_reg(范围查找)、ref(媒介查找，一个表基于另一个表查找)、range(基于索引的范围查找)、index(对于索引的扫描) 和 ALL(表扫描)。
+possible_keys：显示可能应用在这张表中的索引。如果为空，没有可用的索引。
+key：实际使用的索引。如果为NULL，则没有使用索引。
+key_len：使用的索引长度，在不损失精确性的情况下，长度越短越好。
+ref：显示索引的哪一列被使用了，如果可能的话，是一个常数。
+rows：mysql认为必须检查的用来返回请求数据的行数。
+extra：需要注意返回值。
+	-- Using filesort(文件排序)：出现这个值时需要优化。mysql需要进行额外的步骤来发现如何对返回的行排序。它根据连接类型以及存储排序键值和匹配条件的全部行的行指针来排序全部行。
+	-- Using temporary(临时表)：出现这个值时需要优化。mysql需要创建一个临时表来存储结果，这通常发生在对不同的列集进行 order by 上。
+	
+4.具体的优化步骤：
+
+(1)count() 和 max()的优化方法：
+
+max()：
+
+如，使用 explain select max(payment_date) from payment \G;  来查询解释计划。
+
+优化方法：为字段创建索引，避免表扫描。
+
+create index idx_paydate on payment(payment_date);
+
+count()：
+
+select count(release_year='2006' or null) as '2006年电影数量',count(release_year='2007' or null) as '2007年电影数量' from film;
+
+注意，count(*) 和 count(字段) 是有差别的，count(字段)在统计的时候不包含null。
+
+(2)子查询优化：
+
+通常情况下，需要把子查询优化为 join 查询，但在优化时要注意关联的键是否有一对多的关系，要注意重复数据。
+
+select id from t where id in (select tid from t1);
+->
+select distinct id from t inner join t1 on t.id = t1.tid;
+	
+(3)group by 优化：
+
+如果一定要使用 group by，那么最好选择同一张表的字段进行group by。
+
+如：
+
+select actor.first_name,actor.last_name,count(*) from sakila.film_actor inner join sakila.actor using(actor_id) group by film_actor.actor_id;
+
+可优化为：
+
+select actor.first_name,actor.last_name,c.cnt from sakila.actor inner join (
+	select actor_id,count(*) as cnt from sakila.film_actor group by actor_id
+) as c using(actor_id);
+
+
+注意：在处理连接查询条件的时候，尽可能先进行条件过滤再做连接操作。
+
+(4)limit 优化：
+
+limit 常用于分页处理，时常会伴随 order by 从句使用，因此大多数时候会使用 Filesorts ，这样会造成大量的IO。
+
+如：
+
+select id,desc from film order by title limit 50,10;
+
+优化为：
+
+步骤1：使用有索引的列或主键进行 order by 操作。
+
+如：select id,desc from film order by id limit 50,10;
+
+步骤2：记录上次返回的主键，在下次查询时使用主键过滤。
+
+如：select id,desc from film where id > 55 and id <= 60 order by id limit 1,5;
+
+可以有效避免数据量大时扫描过多的记录。
+
+5.索引优化：
+
+(1)选择合适的列建立索引：
+
+①在where从句、group by从句、order by从句、on从句中出现的列。(select操作的字段也可以考虑加索引)
+②索引字段越小越好。
+③离散度(字段唯一值数量)大的列放到联合索引的前面。
+
+如：
+
+select * from payment where staff_id=2 and customer_id=584;
+
+index(staff_id,customer_id) 和 index(customer_id,staff_id) 如何选择？
+
+因为 customer_id 的离散度更大，所以应该使用 index(customer_id,staff_id)。
+
+(2)索引的维护及优化：
+
+--重复及冗余索引
+
+重复索引是指相同的列以相同的顺序建立的同类型的索引，如：primary key 和 ID 列上的索引就是重复索引。
+
+...
+id int not null primary key,
+...
+unique(id),
+
+上面的索引就是重复索引。
+
+冗余索引是指多个索引的前缀列相同，或是在联合索引中包含了主键的索引。
+
+...
+id int not null primary key,
+...
+key(name,id)
+
+上面的索引就是一个冗余索引。
+
+
+特定的sql语句来查找重复及冗余索引。(需要切换到 use information_schema;)
+
+SELECT
+    a.TABLE_SCHEMA AS '数据名' ,
+    a.TABLE_NAME AS '表名' ,
+    a.INDEX_NAME AS '索引1' ,
+    b.INDEX_NAME AS '索引2' ,
+    a.COLUMN_NAME AS '重复列名'
+FROM
+    STATISTICS a
+JOIN STATISTICS b ON a.TABLE_SCHEMA = b.TABLE_SCHEMA
+AND a.TABLE_NAME = b.TABLE_NAME
+AND a.SEQ_IN_INDEX = b.SEQ_IN_INDEX
+AND a.COLUMN_NAME = b.COLUMN_NAME
+WHERE
+    a.SEQ_IN_INDEX = 1
+AND a.INDEX_NAME <> b.INDEX_NAME
+
+
+使用工具 pt-duplicate-key-checker 工具检查重复及冗余索引。
+
+使用命令：
+
+pt-duplicate-key-checker \
+-uroot \
+-p '' \
+-h 127.0.0.1
+
+使用该工具可以获得索引的维护建议。
+
+
+--删除不再使用的索引
+
+在 mysql 中目前只能通过慢查日志配合 pt-index-usage 工具来进行索引使用情况的分析。
+
+使用命令：
+
+pt-index-usage \
+-uroot -p '' \
+mysql-slow.log
+
+
+数据库表结构优化：
+
+6.选择合适的数据类型：
+
+(1)使用可以保存数据的最小的数据类型。
+(2)使用简单的数据类型。int 要比 varchar 类型在 mysql 处理上简单。
+(3)尽可能的使用 not null 定义字段。
+(4)尽量少使用 text 类型，非用不可时最好考虑分表。
+
+可以保存时间的类型：varchar、datetime、timestamp、int。(超过2038年或者跨时区的用datetime，带时区的用timestamp)
+
+使用 int 来存储日期时间，利用 FROM_UNIXTIME(),UNIX_TIMESTAMP()两个函数来进行转换。
+
+FROM_UNIXTIME()：将 int 类型转换成正常日期时间。
+UNIX_TIMESTAMP()：将正常日期时间转换成 int 类型。
+
+
+IP地址除了可以用 varchar 来存，还可以用 bigint 来存，利用 INET_ATON(),INET_NTOA() 两个函数相互转换。
+
+感觉这种方式并不好，略。
+
+
+慎用 enum，推荐使用 tinyint 来代替。
+
+7.表的范式化和反范式化：
+
+(1)范式化：
+
+范式化是指数据库设计的规范，目前说到的范式化一般是指第三设计范式，即：要求数据表中不存在非关键字段对任意候选关键字段的传递函数依赖则符合第三范式。
+
+不符合第三范式要求的表存在下列问题：
+
+数据冗余，冗余字段对于每一个商品都会进行记录。
+数据的插入异常。
+数据的更新异常。
+数据的删除异常。
+
+处理方法：表结构拆分。
+
+(2)反范式化：
+
+反范式化是指为了查询效率的考虑把原本符合第三范式的表适当的增加冗余，以达到优化查询效率的目的，反范式化是一种以空间来换时间的操作。
+
+8.表拆分：
+
+(1)表的垂直拆分：
+
+把原来一个有很多列的表拆分成多个表，解决了表的宽度问题。
+
+通常可以按这些原则进行：
+
+①把不常用的字段单独存放到一个表中。
+②把大字段独立存放到一个表中。
+③把经常一起使用的字段放到一起。
+
+(2)表的水平拆分：
+
+表的水平拆分是为了解决单表的数据量过大(400万以上)的问题，水平拆分的表每一个表的结构都是完全一致的。
+
+常用的水平拆分方法为：
+
+①对 customer_id 进行 hash 运算，如果要拆分成5个表则使用 mod(customer_id,5) 取出 0-4 个值。
+②针对不同的 hashID 把数据存到不同的表中。
+
+挑战：
+
+①跨分区表进行数据查询。
+②统计及后台报表操作。
+
+思路：前台使用拆分表，后台使用汇总表。
+
+
+系统配置优化：
+
+9.操作系统配置优化：
+
+以 Linux 系统为例，下面是一些常用的系统配置：
+
+网络方面的配置，需要修改 /etc/sysctl.conf 文件
+
+# 增加 tcp 支持的队列数
+net.ipv4.tcp_max_syn_backlog=65535
+# 减少断开连接时资源回收
+net.ipv4.tcp_max_tw_buckets=8000
+net.ipv4.tcp_tw_reuse=1
+net.ipv4.tcp_tw_recycle=1
+net.ipv4.tcp_fin_timeout=10
+
+# 打开文件数的限制，可以使用 ulimit -a 查看目录的限制，修改 /etc/security/limits.conf 文件，增加下面的内容以修改打开文件数量的限制：
+
+* soft nofile 65535
+* hard nofile 65535
+
+除此以外，最好在 MySql 服务器上关闭 iptables,selinux 等防火墙软件。
+
+10.MySql优化：
+
+(1)MySql可以通过启动时指定配置参数和使用配置文件两种方法进行配置，在大多数情况下配置文件位于 /etc/my.cnf 或是 /etc/mysql/my.cnf。
+
+MySql 查找配置文件的顺序可以通过以下命令获得
+
+$ /usr/sbin/mysqld --verbose --help | grep -A 1 'Default options '
+
+注意：如果存在多个位置存在配置文件，则后面的会覆盖前面的。
+
+(2)MySql配置文件常用参数说明：
+
+①innodb_buffer_pool_size：非常重要，用于配置 Innodb 的缓冲池，如果数据库中只有 Innodb表，则推荐配置量为总内存的 75%。
+
+select engine,
+round(sum(data_length+index_length)/1024/1024,1) as "Total MB"
+FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA NOT IN 
+("inoformation_schema","performance_schema")
+Group by engine;
+
+innodb_buffer_pool_size >= Total MB
+
+通过上述sql的查询结果，设置 innodb_buffer_pool_size 参数值。
+
+②innodb_buffer_pool_instances：MySql5.5中新增参数，可以控制缓冲池的个数，默认情况下只有一个缓冲池。
+
+③innodb_log_buffer_size：缓冲的大小，由于日志最长每秒钟就会刷新所以一般不用太大。
+
+④innodb_flush_log_at_trx_commit：关键参数，对 innodb 的 IO 效率影响很大。默认值为 1 ，可以取 0 , 1 , 2 三个值。一般建议设置为 2，如果对数据安全性要求比较高则使用默认值 1。
+
+⑤innodb_read_io_threads、innodb_write_io_threads：
+
+以上两个参数决定了 Innodb 读写的 IO 进程数，默认为 4。
+
+⑥innodb_file_per_table：关键参数，控制 Innodb 每一个表使用独立的表空间，默认为 OFF，也就是所有表都会建立在共享表空间中。建议设置为 ON。
+
+⑦innodb_stats_on_metadata：决定了 MySql 在什么情况下会刷新 innodb 表的统计信息。可以设置为 OFF。
+
+(3)第三方配置工具：
+
+Percon Configuration Wizard：https://tools.percona.com/wizard
+
+根据引导设置获取配置表。
+
+
+服务器硬件优化：
+
+11.服务器硬件优化：
+
+(1)如何选择CPU：
+
+选择单核频率更快的CPU还是选择核数更多的CPU：
+
+MySql 的一些工作只能由单核完成，倾向于频率更快的CPU，并且不超过 32 核。
+
+(2)Disk IO优化：
+
+常用 RAID 级别简介：
+
+RAID0：条带，把多个磁盘链接成一个硬盘使用，这个级别IO最好。
+RAID1：镜像，要求至少有两个磁盘，每组磁盘存储的数据相同。
+RAID5：把多个硬盘合并成1个逻辑盘使用。
+RAID1+0：就是 RAID1 和 RAID0 的结合。一般建议数据库使用这个级别。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

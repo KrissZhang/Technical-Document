@@ -1,0 +1,88 @@
+1.synchronized同步过程：
+
+线程执行到synchronized代码块时，会先自动获取内部锁，这个时候，如果其他线程也想访问这部分代码块的时候就会获取锁失败，进入阻塞状态。拿到内部锁的线程会在：正常退出同步代码块、抛出异常后、在同步块内调用了该内置锁的wait等方法以上三种情况下释放内置锁。因为这把内置锁是属于独占锁，所以其他线程必须等到内置锁被释放后才能获取到内置锁。
+
+2.synchronized的内存语义：
+
+进入 synchronized 块的内存语义：把 synchronized 块内使用到的变量从工作内存中清除，从主内存中直接获取。
+
+退出 synchronized 块的内存语义：把 synchronized 块内对共享变量的修改刷新到主内存中。
+
+3.synchronized 的使用：
+
+(1)synchronized用在非静态方法内部，这时候获取的锁是：实例对象锁。
+
+	/**
+	 * 获取实例对象的锁
+	 */
+	public synchronized void testSynchronized(){
+		//需要同步的内容.......
+		//我是要同步的内容.....
+	}
+
+(2)synchronized用在静态方法内部，这时候获取的锁是：该Class对象的锁。
+
+	/**
+	 * 获取的是该类的Class对象的锁
+	 */
+	public static synchronized void testStaticSynchronized(){
+		//需要同步的内容.......
+		//我是要同步的内容.....
+	}
+
+(3)synchronized包裹一部分代码时，获取的锁是括号里面的锁。
+
+	/**
+	 * 获取的是括号内部对象的锁,一般会传入this，
+	 * 因为一直new obj有很多个，不是唯一的，就达不到锁的功能了
+	 */
+	public void testInSynchronized(){
+		Object obj = new Object();
+		//传入obj对象的锁，一般为this，也就是该方法所在对象的实例对象
+		synchronized (obj){
+			//需要同步的内容.....
+			//我是要同步的内容......
+		}
+	}
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

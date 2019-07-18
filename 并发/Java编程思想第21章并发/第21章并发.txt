@@ -1,0 +1,281 @@
+1.并发编程的目的：
+
+提升性能、简化模型设计。
+
+2.基础简介：
+
+上下文切换：从一个任务切换到另一个任务。
+
+阻塞：如果程序中的某个任务因为该程序控制范围之外的某些条件而导致不能继续执行，那么就说这个任务或线程阻塞了。
+
+3.定义任务：
+
+(1)实现Runnable接口。
+
+(2)继承Thread类。
+
+(3)使用Executor的各种实现。
+
+(4)实现Callable接口：可以有返回值，可以抛出异常。
+
+如：
+
+class TestCallable{
+    public static void main(String[] args){
+        ThreadCallableDemo tcd = new ThreadCallableDemo();
+        FutureTask<Integer> result = new FutureTask<>(tcd);
+
+        new Thread(result).start();
+
+        try {
+            Integer sum = result.get();
+            System.out.println(sum);
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+class ThreadCallableDemo implements Callable<Integer>{
+
+    @Override
+    public Integer call() throws Exception {
+        int sum = 0;
+
+        for (int i = 0; i <= 100; i++) {
+            sum += i;
+        }
+
+        return sum;
+    }
+
+}
+
+4.休眠：
+
+sleep()：让当前线程休眠，即当前线程会从"运行状态"进入到"休眠(阻塞)状态"。sleep()会指定休眠时间，线程休眠的时间会大于/等于该休眠时间；在线程重新被唤醒时，它会由"阻塞状态"变成"就绪状态"，从而等待cpu的调度执行。
+
+sleep() 与 wait() 的比较：
+
+wait() 会释放对象的同步锁，而 sleep() 则不会释放锁。
+
+5.优先级：
+
+线程的优先级将该线程的重要性传递给了调度器，调度器将倾向于让优先权最高的线程先执行。然而，这并不意味着优先权低的线程将得不到执行。通常来说，所有线程都应该以默认的优先级运行，试图操纵线程优先级通常是一种错误。
+
+6.让步：
+
+可以通过 yield() 方法来暗示一个线程的工作已经做得差不多了，可以让出CPU给其他线程使用。
+
+7.后台线程：daemon线程。
+
+指在程序运行的时候在后台提供一种通用服务的线程，并且这种线程并不属于程序中不可或缺的部分。所有的非后台线程结束时，程序也就终止了。
+
+必须在线程启动之前调用setDaemon()方法，将线程设置为后台线程。
+
+8.加入一个线程：
+
+一个线程可以在其他线程之上调用join()方法，其效果是等待一段时间直到第二个线程结束才继续执行。即：如果某个线程在另一个线程t上调用t.join()，此线程将被挂起，直到目标线程t结束才恢复。
+
+也可以在调用join()时带上一个超时参数，这样join()方法总是能够返回。
+
+9.线程组：
+
+不推荐使用。
+
+10.捕获异常：
+
+可以使用Executor来捕获异常。
+
+11.共享受限资源：
+
+(1)多线程调度访问共享区域的临界资源造成线程不安全问题。
+
+(2)解决共享资源竞争：为共享资源访问加锁，保证同一时间只有一个线程可以访问临界资源。
+
+synchronized内置锁和Lock显式锁：略。
+
+(3)原子性和易变性：
+
+考虑以无锁的方式来保证多线程的线程安全。无锁保证线程安全是非常容易出问题的，首选考虑的方式仍然是锁机制。
+
+12.原子类：
+
+如：AtomicInteger、AtomicLong、AtomicReference。
+
+13.临界区：
+
+有时只是希望防止多个线程同时访问方法内部的部分代码而不是防止访问整个方法。通过这种方式分离出来的代码段被称为临界区。可以使用 synchronized 来指定某个对象，此对象的锁被用来对花括号内的代码进行同步控制，如：
+
+synchronized(syncObject){
+	//
+}
+
+这种方式也称为同步控制块，进入此段代码前，必须得到syncObject对象的锁，如果其他线程已经得到这个锁，那么就得等到锁被释放之后，才能进入临界区。使用同步控制块而不是对整个方法进行同步控制，可以显著地提升性能。
+
+14.在其他对象上同步：
+
+synchronized 块必须给定一个在其上进行同步的对象，最合理的方式是，使用其方法正在被调用的当前对象：synchronized(this){}。有时必须在另一个对象上同步，如果这么做，必须确保所有相关任务都是在同一个对象上同步的。
+
+15.线程本地存储：
+
+防止任务在共享资源上产生冲突的第二种方式是解除对变量的共享，可以为使用相同的变量的每个不同的线程都创建不同的存储。
+
+16.终止任务：
+
+线程状态：
+
+新建(new)：线程被创建，已经分配了必需的系统资源，并执行了初始化，已经有资格获得CPU时间了。
+就绪(Runnable)：在这种状态下，只要调度器把时间片分配给线程，线程就可以运行。在任何时刻，线程可以运行也可以不运行。
+阻塞(Blocked)：线程能够运行，但有某个条件阻止它的运行。当线程处于阻塞状态时，调度器将忽略线程，不会分配给线程任何CPU时间，直到线程重新进入了就绪状态，才有可能操作。
+死亡(Dead)：处于死亡或终止状态的线程将不再是可调度的，并且再也不会得到CPU时间，它的任务已结束，或不再是可运行的。
+
+进入阻塞状态：
+
+一个任务进入阻塞状态可能有如下原因：
+
+(1)通过调用sleep(milliseconds)使任务进入休眠状态。
+(2)通过调用wait()使线程挂起。直到线程得到了notify() 或 notifyAll() 消息(或者等价的 signal() 或 signalAll()消息)，线程才会进入就绪状态。
+(3)任务在等待某个输入/输出完成。
+(4)任务试图在某个对象上调用其同步控制方法，但是对象锁不可用，因为另一个任务已经获取了这个锁。
+
+不要使用 suspend() 、 resume() 和 stop() 方法。
+
+17.中断：
+
+一种方式是 Thread.interrupt() (该方法的调用会清除中断位的状态，也就是说第二次调用时会返回未中断的状态，Thread.interrupted())，直接操作 Thread 对象不是推荐的做法，通过 Executor 调用 shutdown() 和 shutdownNow() 的做法比较好。
+
+处理中断或经由中断抛出异常后，应当正确清理资源。
+
+18.线程之间的协作：
+
+wait() 与 notifyAll()：
+
+wait() 使你可以等待某个条件发生变化，而改变这个条件超出了当前方法的控制能力，通常，这种条件将由另一个任务来改变。wait() 会在等待外部世界产生变化的时候将任务挂起，并且只有在 notify() 或 notifyAll() 发生时，这个任务才会被唤醒并去检查所产生的变化。
+
+调用 sleep() 和 yield() 的时候锁并没有被释放，而 wait() 会释放对象锁，其他 synchronized 方法可以在 wait() 期间被调用。
+
+wait() 有两种形式：
+
+第一种版本：接受毫秒数作为参数，与 sleep() 有相同的含义，即：在此期间暂停。
+
+第二种版本：更加常用，不接受任何参数，无限期等待下去，直到线程接收到 notify() 或者 notifyAll() 消息。
+
+wait()、notify()、notifyAll() 是 Object 的一部分，而不是 Thread 的一部分，是因为这些方法操作的锁也是所有对象的一部分。
+
+notify() 和 notifyAll()：
+
+在技术上，调用 notifyAll() 比只调用 notify() 要更安全。但是使用 notify() 而不是 notifyAll() 是一种优化。有的时候必须保证唤醒的是恰当的任务，这时也应该使用 notify()。
+
+使用显式的 Lock 和 Condition 对象：
+
+使用互斥并允许任务挂起的基本类是 Condition，你可以通过 Condition 上调用 await() 来挂起一个任务，当外部条件发生变化后，调用 signal() 来通知这个任务，或者调用 signalAll() 来唤醒所有在这个 Condition 上被其自身挂起的任务。与 notifyAll() 相比 signalAll() 是更加安全的方式。
+
+如：
+
+class Test2 {
+    private Lock lock = new ReentrantLock();
+    private Condition condition = lock.newCondition();
+
+    public void await(){
+        lock.lock();
+        try{
+            condition.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void signal(){
+        lock.lock();
+        try{
+            condition.signal();
+        }finally {
+            lock.unlock();
+        }
+    }
+
+}
+
+wait() 和 notifyAll() 以一种非常低级的方式解决了任务互操作的问题，其实还可以使用更高级的抽象来解决问题，即：同步队列。
+
+同步队列在任何时刻都只允许一个任务插入或移除元素，BlockingQueue接口，通常可以使用 LinkedBlockingQueue。
+
+如：
+
+private BlockingQueue<Object> rockets;
+
+public void add(Object obj){
+	try{
+		rockets.put(obj);
+	}catch(Exception e){
+		//...
+	}
+}
+
+public void run(){
+	try{
+		while(!Thread.interrupted()){
+			Object obj = rockets.take();
+			obj.run();
+		}
+	}catch(Exception e){
+		//...
+	}
+}
+
+任务间使用管道进行输入/输出：略。
+
+19.死锁：任务之间循环等待，没有任何线程可以继续执行。
+
+发生死锁的条件：
+
+互斥，使用的资源至少有一个是不能共享的。
+至少有一个任务必须持有一个资源且正在等待获取一个当前被别的任务持有的资源。
+资源不能被抢占，任务必须把资源释放当做普通事件。
+必须有循环等待。
+
+上述四个条件必须要全部满足才可能会发生死锁。
+
+20.JUC 新构件：
+
+(1)CountDownLatch：参考博客文档。
+
+(2)CyclicBarrier：参考博客文档。
+
+(3)DelayQueue：参考博客文档。
+
+(4)PriorityBlockingQueue：参考博客文档。
+
+(5)ScheduledExecutor：参考博客文档。
+
+(6)Semaphore：参考博客文档。
+
+(7)Exchanger：参考博客文档。
+
+21.仿真：略。
+
+22.性能调优：
+
+(1)synchronized 和 Atomic 对象的选择。
+
+(2)synchronized 和 lock 的选择。
+
+(3)线程安全容器和Collections类的静态同步装饰方法基于加锁机制，会极大地影响性能，可以考虑新的安全容器构件。
+
+CopyOnWriteArrayList、CopyOnWriteArraySet：写入整个底层数组副本，使复制的数据在读操作时可以安全地执行，修改完成时一个原子的操作把新的数组换入。
+
+ConcurrentHashMap、ConcurrentLinkedQueue：原理和上述类似。
+
+(4)乐观锁：参考博客。
+
+(5)Map的各种实现：
+
+ConcurrentHashMap 的性能高于 SynchronizedHashMap。
+
+(6)ReadWriteLock：读写锁处理多读少写的场景。
+
+23.活动对象：略。
+
