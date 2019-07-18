@@ -1,0 +1,111 @@
+1.检查本地是否安装过其他版本的mysql：
+
+rpm -qa | grep -i mysql
+
+2.卸载其他版本的MySQL：
+
+yum -y remove MySQL*
+
+3.下载 mysql5.5 的服务器和客户端的安装包：(注意后续操作都在root账户下执行)
+
+服务器包：
+wget https://dev.mysql.com/get/Downloads/MySQL-5.5/MySQL-server-5.5.59-1.el7.x86_64.rpm
+
+客户端包：
+wget https://dev.mysql.com/get/Downloads/MySQL-5.5/MySQL-client-5.5.59-1.el7.x86_64.rpm
+
+若提示：-bash: wget: 未找到命令，则表明没有安装wget，执行安装命令：yum -y install wget
+
+4.安装服务器和客户端：
+
+rpm -ivh --nodeps MySQL-server-5.5.59-1.el7.x86_64.rpm --force --nodeps
+
+rpm -ivh --nodeps MySQL-client-5.5.59-1.el7.x86_64.rpm
+
+查看安装的mysql是否已安装成功：
+
+rpm -qa | grep -i mysql
+
+5.启动mysql并设置mysql服务开机自启动：
+
+启动mysql：
+
+service mysql start
+
+设置开机自启动：
+
+systemctl enable mysql 
+
+验证自启动是否成功：
+
+chkconfig --list | grep mysql
+
+注意：
+
+(1)启动失败时，考虑这种方式解决：
+
+Backup your MySQL configuration first.
+mv /etc/my.cnf /etc/my.cnf.backup
+
+(2)3，4，5都是开则说明设置成功。
+
+6.登录mysql并设置密码：
+
+mysql -uroot
+set password=password('密码');
+
+7.开启mysql的远程登录：
+
+grant all privileges on *.* to 'root'@'%' identified by '密码';
+flush privileges;
+
+关闭防火墙：
+
+systemctl stop firewalld
+
+设置开机禁用防火墙：
+
+systemctl disable firewalld.service
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
