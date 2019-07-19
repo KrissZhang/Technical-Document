@@ -1,0 +1,145 @@
+1.Redis下载：
+
+去 Redis 官网下载，选择 stable(稳定)版，如：redis-4.0.14.tar.gz。
+
+2.安装 gcc：
+
+yum install gcc-c++
+
+3.安装 Redis：
+
+(1)上传 Redis 的源码包到 Linux系统。
+
+一般放到 /usr/local 目录下。
+
+(2)解压缩源码包：
+
+tar zxvf redis-4.0.14.tar.gz
+
+(3)编译安装：
+
+进入解压缩目录，如：
+
+cd redis-4.0.14
+
+编译：
+
+make
+
+如果碰到，致命错误：jemalloc/jemalloc.h：没有那个文件或目录，则使用命令：
+
+make MALLOC=libc
+
+安装：
+
+make install PREFIX=安装路径，如：/usr/local/redis
+
+4.后台启动：
+
+(1)把 /root/redis-4.0.14/redis.conf 复制到 /usr/local/redis/bin 目录下，
+
+cp redis.conf /usr/local/redis/bin
+
+(2)修改配置文件：
+
+vim redis.conf
+
+①将 daemonize no 修改为 daemonize yes
+
+②将 bind 127.0.0.1 修改为 bind 0.0.0.0
+
+(3)启动：
+
+./redis-server redis.conf
+
+(4)查看是否启动成功：
+
+ps aux | grep redis
+
+(5)关闭客户端：
+
+kill + 进程号
+
+或者
+
+./redis-cli shutdown
+
+5.Redis基本使用：
+
+启动Redis客户端：./redis-cli
+
+测试：ping -> PONG
+
+退出客户端：quit。
+
+切换 Redis 的IP：
+
+./redis-cli -h ip地址 -p 端口号
+
+
+注意：关闭防火墙。
+
+systemctl stop firewalld.service
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
