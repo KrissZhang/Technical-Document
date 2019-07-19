@@ -1,0 +1,78 @@
+1.本地项目配置文件修改：
+
+(1)修改数据库连接ip、端口、登录名、密码。
+
+(2)修改 Redis 服务器 ip 和 端口。
+
+(3)修改日志文件路径：
+
+如：
+
+D:/logs
+
+->
+
+/usr/local/logs
+
+(4)修改上传文件路径：
+
+如：
+
+D:/upload/
+
+->
+
+/usr/local/upload/
+
+2.打包项目：
+
+maven：
+
+clean -> install(package)
+
+3.上传项目包到Linux服务器指定路径：
+
+如：/usr/local
+
+4.运行 jar 包：
+
+nohup java -jar xxx.jar &
+
+查看是否运行：
+
+jobs -l
+
+停用服务：
+
+kill -9 进程号
+
+请求网页：
+
+如：
+
+curl http://172.16.7.34:9001/springbootdemo/index.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
