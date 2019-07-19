@@ -36,7 +36,7 @@ clean -> install(package)
 
 4.运行 jar 包：
 
-nohup java -jar xxx.jar &
+nohup java -jar xxx.jar > logdata.out 2>&1 &
 
 查看是否运行：
 
