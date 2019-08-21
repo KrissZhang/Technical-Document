@@ -1,0 +1,87 @@
+1.安装依赖项和必要组件：
+
+yum install -y make cmake gcc gcc-c++  
+
+yum install -y pcre pcre-devel
+
+yum install -y zlib zlib-devel
+
+yum install -y openssl openssl-devel
+
+2.下载对应平台的安装包：
+
+http://nginx.org/en/download.html
+
+3.在指定目录下解压安装包，如：/usr/local
+
+tar zxvf nginx-xxx.tar.gz
+
+4.进入解压目录：
+
+cd nginx-xxx
+
+5.编译配置：
+
+./configure && make && make install
+
+6.创建全局命令：
+
+ln -s /usr/local/nginx/sbin/nginx /usr/bin/nginx
+
+7.启动测试：
+
+启动：nginx
+
+重载加载配置：nginx -s reload
+
+查看版本信息：nginx -V
+
+访问默认的80端口可以显示欢迎页面。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
