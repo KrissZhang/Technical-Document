@@ -41,7 +41,7 @@ public class ThreadTest {
             }
 
             //等待所有线程执行完毕
-            countDownLatch.await();
+            countDownLatch.await(15, TimeUnit.MINUTES);
 
             //关闭线程池
             executor.shutdown();
@@ -83,7 +83,7 @@ public class ThreadTest {
     /**
      * 线程处理内部类
      */
-    class DataDealWith extends Thread {
+    class DataDealWith implements Runnable {
         //线程数据集
         List<Integer> list = new ArrayList<>();
 
